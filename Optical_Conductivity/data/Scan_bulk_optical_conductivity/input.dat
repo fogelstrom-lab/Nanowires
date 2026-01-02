@@ -1,0 +1,11 @@
+0.001   ! Temperature
+ 0.5    ! The nanowire length
+ 0.0    ! The length of the uncovered central part of the nanowire
+0.00    ! Phase difference (in pis)
+5.0000  ! Inverse mean-free path (potential tau(1))
+0.00001 ! Potential scattering strength (sigma(1))
+0.00001 ! Inverse mean-free path (magnetic tau(2))
+0.00001 ! Magnetic scattering strength (sigma(2))
+60.0    ! Energy range in Delta (Integer value)
+2000    ! # energt steps over the whole interval
+1e-6    ! Errror tolerance

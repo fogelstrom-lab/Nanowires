@@ -5,7 +5,7 @@ OBJ_DIR = build
 
 BUILD ?= release
 
-FFLAGS_COMMON = -std=f2008 -mcpu=apple-m3 -ftree-vectorize -funroll-loops -fno-math-errno
+FFLAGS_COMMON = -std=f2008 -mcpu=apple-m2 -ftree-vectorize -funroll-loops -fno-math-errno
 LDFLAGS = -framework Accelerate
 
 ifeq ($(BUILD),debug)

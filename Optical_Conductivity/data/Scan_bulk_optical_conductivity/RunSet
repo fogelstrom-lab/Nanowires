@@ -1,0 +1,31 @@
+cd GammaB=0.001
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=0.005
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=0.010
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=0.050
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=0.100
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=0.500
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=1.000
+pwd
+mpirun -n 6 ../qc_project < input.dat
+#
+cd ../GammaB=5.000
+pwd
+mpirun -n 6 ../qc_project < input.dat
