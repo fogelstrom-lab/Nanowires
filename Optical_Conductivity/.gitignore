@@ -1,0 +1,5 @@
+*.o
+*.mod
+qc_project
+*.out
+.DS_Store
