@@ -12,6 +12,8 @@ module qc_data
 
   complex(dp), allocatable :: gr_1(:,:), gr_2(:,:), delx(:)
   complex(dp), allocatable :: gimp0(:), fimp0(:), timp0(:), uimp0(:)
+  complex(dp), allocatable :: gimpP(:,:), fimpP(:,:), timpP(:,:) 
+  complex(dp), allocatable :: gimpM(:,:), fimpM(:,:), timpM(:,:)
 
   real(dp),    allocatable :: grid(:), er(:)
   real(dp)                 :: tau(2),sigma(2), srate(0:2)

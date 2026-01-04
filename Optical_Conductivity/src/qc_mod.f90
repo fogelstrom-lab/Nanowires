@@ -92,17 +92,19 @@ contains
 
       if(.not.allocated(delx)) allocate(delx(1:sx))
       delx = czero
+      delx(1) = delL 
+      delX(sx) = delR
 
-       do ii=1,sx
-          if(grid(ii) < -Ngap) then
-             delx(ii)= DelL
-          endif
-          if(grid(ii) > Ngap) then
-             delx(ii)= DelR 
-          endif
-          if(myrank == 0) write(2,1000) grid(ii),delx(ii)
-       enddo
-       if(myrank == 0) close(2)
+!       do ii=1,sx
+!          if(grid(ii) < -Ngap) then
+!             delx(ii)= DelL
+!          endif
+!          if(grid(ii) > Ngap) then
+!             delx(ii)= DelR 
+!          endif
+!          if(myrank == 0) write(2,1000) grid(ii),delx(ii)
+!       enddo
+!       if(myrank == 0) close(2)
 !
 ! - set up the energy grid
 !

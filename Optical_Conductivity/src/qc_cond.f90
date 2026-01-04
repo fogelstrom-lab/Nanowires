@@ -331,8 +331,8 @@ contains
 !
 !-- Make the diagonal part of the Green's function p.v > 0, a factor two less due to averaging over direction
 !
-         NRpp=0.25/(1.0+gr_1p(i,iep)*gr_2p(i,iep))
-         NRpm=0.25/(1.0+gr_1p(i,iem)*gr_2p(i,iem))
+         NRpp=1.0/(1.0+gr_1p(i,iep)*gr_2p(i,iep))
+         NRpm=1.0/(1.0+gr_1p(i,iem)*gr_2p(i,iem))
 
          dgRp = w*NRpp*((gr_2p(i,iep)+gr_2p(i,iem))*gRp(i) &
                        +(gr_1p(i,iep)+gr_1p(i,iem))*tRp(i))*NRpm
@@ -341,8 +341,8 @@ contains
 !
 !-- Make the diagonal part of the Green's function p.v > 0
 !
-         NRmp=0.25/(1.0+gr_1m(i,iep)*gr_2m(i,iep))
-         NRmm=0.25/(1.0+gr_1m(i,iem)*gr_2m(i,iem))
+         NRmp=1.0/(1.0+gr_1m(i,iep)*gr_2m(i,iep))
+         NRmm=1.0/(1.0+gr_1m(i,iem)*gr_2m(i,iem))
 
          dgRm = w*NRmp*((gr_2m(i,iep)+gr_2m(i,iem))*gRm(i) &
                        +(gr_1m(i,iep)+gr_1m(i,iem))*tRm(i))*NRmm
@@ -353,7 +353,7 @@ contains
          lcurrK(i) = -(thp-thm)*(dgXp-dgXm) 
       enddo         
 
-      icond = lcurrR+lcurrK
+      icond = 0.25*(lcurrR+lcurrK)
 
 !1000 format(30(1x,e14.8))
 !
