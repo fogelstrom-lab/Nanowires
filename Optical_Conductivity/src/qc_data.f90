@@ -28,9 +28,6 @@ module qc_data
   complex(dp), allocatable :: alpha2p(:,:), beta2p(:,:)
   complex(dp), allocatable :: alpha2m(:,:), beta2m(:,:)
 
-  real, parameter :: tol1 = 1.0e-10
-  real, parameter :: tol2 = 1.0e-6
-  complex(dp), parameter :: Atol = cmplx(1.0,1.0)*tol1, Rtol = cmplx(1.0,1.0)*tol2
 
 ! MPI variables
 

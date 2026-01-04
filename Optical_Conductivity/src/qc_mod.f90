@@ -40,7 +40,7 @@ contains
          write(*,1510)' The discretisation step (in xi:s)       : ',dx
          read(*,*) phase
          write(*,1510)' The phase difference (in pi)            : ',phase
-         phase=phase*pi/2.0
+         phase=phase*pi
          read(*,*) tau(1) 
          write(*,1510)' The pot. impurity scatt rate (in deltas): ',tau(1)
          read(*,*) sigma(1)
@@ -88,7 +88,7 @@ contains
 
       op   = delta0*exp(w*phase)
       DelR =       op 
-      DelL = conjg(op) 
+      DelL =  delta0
 
       if(.not.allocated(delx)) allocate(delx(1:sx))
       delx = czero
@@ -141,7 +141,21 @@ contains
       gimp0 = czero
       fimp0 = czero
       timp0 = czero
-      uimp0 = czero
+
+      if(.not.allocated(gimpP)) allocate(gimpP(1:sx,2))
+      if(.not.allocated(fimpP)) allocate(fimpP(1:sx,2))
+      if(.not.allocated(timpP)) allocate(timpP(1:sx,2))
+      gimpP = czero
+      fimpP = czero
+      timpP = czero
+
+      if(.not.allocated(gimpM)) allocate(gimpM(1:sx,2))
+      if(.not.allocated(fimpM)) allocate(fimpM(1:sx,2))
+      if(.not.allocated(timpM)) allocate(timpM(1:sx,2))
+      gimpM = czero
+      fimpM = czero
+      timpM = czero
+
 !
 !-- Leading-order quantities that are saved for later
 !
@@ -273,7 +287,7 @@ contains
 
       etaR_org = etaR
 
-      do while (etaR >= etaR_org/2048.0)
+      do while (etaR >= etaR_org/4096.0)
          call get_ses(counter,err)
          gp = etaR / delta0
          if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2),' Ngap =',Ngap*2.0_dp
@@ -289,7 +303,7 @@ contains
       deallocate(avj,avg,avf,avt)
 
       idum = 0
-      iprint = 0 
+      iprint = 1 
       ex_old = 3000
       do ien = -iemax + myrank, iemax, 200*nprocs
          if(ien .le. 0) energy = 0.5*(er(ien+1)+er(ien))
@@ -298,7 +312,8 @@ contains
          call get_imp_at_e(energy,i,idum,iprint)     
          if(myrank == 0) write(*,*) ien, energy/delta0, idum
       end do
-      if(myrank == 0) then
+
+      if(myrank == 0 .and. iprint== 0) then
          close(500)
          close(501)
          close(502)

@@ -22,7 +22,7 @@ contains
 !
    integer :: i, ir, ic
    complex(dp), allocatable :: condv(:,:), lcondv(:,:), avcond(:) 
-   real(dp) :: sumsrate, oga
+   real(dp) :: sumsrate, oga, d2
    integer :: ulog, ios, pstep
    character(len=128) :: fname
 
@@ -35,7 +35,7 @@ contains
       condv  =  (0.0_dp, 0.0_dp)
       lcondv =  (0.0_dp, 0.0_dp)
       ic =  sx/2
-
+      d2 = delta0*delta0
 
       ulog = 100 + myrank
       write(fname,'("qc_cond_log_rank",i0,".dat")') myrank
@@ -57,7 +57,7 @@ contains
          oga = omega/delta0
          call integral
          lcondv(:,i) = real(cond(:))/sumsrate + w*omega*aimag(cond(:))/2.0
-         if(myrank == 0) write(*,1100) myrank, oga, lcondv(ic,i), lcondv(1,i)
+         if(myrank == 0) write(*,1100) myrank, oga, lcondv(ic,i), lcondv(1,i), 1.0/(omega**2+d2*sumsrate**2)
          write(ulog,*) oga, counter, icall_lin ! logg how many self-energy iterations per frecquency
       enddo
       close(ulog)
@@ -82,7 +82,7 @@ contains
          do i=1,nfreq
             omega = frequencies(i)
             oga = omega/delta0
-            write(10,1000) oga, avcond(i)
+            write(10,1000) oga, avcond(i) ,1.0/(omega**2+sumsrate**2)
             write(11,1000) oga, (real(condv(ir,i)),ir=1,sx,pstep)
             write(12,1000) oga,(aimag(condv(ir,i)),ir=1,sx,pstep)
          enddo
@@ -105,12 +105,13 @@ contains
 !--------------------------------------------------------------------------
 !
       integer  :: iestep, ie, maxdepth
-      real(dp) :: epsl, epsu, dom, tol
+      real(dp) :: epsl, epsu, dom, atol, rtol
       complex(dp), allocatable :: icond(:) 
 
       if (.not. allocated(icond)) allocate(icond(1:sx)) 
 
-      tol = 1.0e-7_dp
+      atol = 1.0e-7_dp
+      rtol = 1.0e-5_dp
       maxdepth = 30
       icond = (0.0_dp, 0.0_dp)
       cond  = (0.0_dp, 0.0_dp)
@@ -123,7 +124,7 @@ contains
 
          epsl = er(ie)
          epsu = er(ie+iestep)
-         call integrate_vec_adaptive(linear_resp, epsl, epsu, icond, tol, maxdepth)
+         call integrate_vec_adaptive(linear_resp, epsl, epsu, icond, atol, rtol, maxdepth)
          cond = cond + icond
       end do
 
@@ -147,12 +148,12 @@ contains
       real(dp),    intent(in)  :: energy
       complex(dp), intent(out) :: icond(:)
 
-      integer :: i, iep, iem, icont, icmp, iprint
+      integer :: i, iep, iem, icont, icmp, iprint, imploop
       real(dp) :: d, thp, thm, err, epsp, epsm
-      complex(dp) :: NRpp, NRpm,  NRmp, NRmm
-      complex(dp) :: dgRp, dgRm, dgXp, dgXm, kshift
-      complex(dp) :: gold, told, xold, aold, gexp, wd
+      complex(dp) :: gold, told, xold, aold, gexp, wd, kshift
+      complex(dp) :: aR(2,2), bR(2,2), tmp(2,2), cR(2,2), cX(2,2), gR(2,2), gX(2,2)
 
+      complex(dp), allocatable :: NRp(:), NRm(:), NKp(:), NKm(:)
       complex(dp), allocatable :: gRpL(:), tRpL(:), XxpL(:), XapL(:)
       complex(dp), allocatable :: gRmL(:), tRmL(:), XxmL(:), XamL(:)
       complex(dp), allocatable :: gRp(:), tRp(:), Xxp(:), Xap(:)
@@ -160,10 +161,32 @@ contains
       complex(dp), allocatable :: R1p(:), R2p(:), R1m(:), R2m(:)
       complex(dp), allocatable :: X1p(:), X2p(:), X1m(:), X2m(:)
 
+      complex(dp), allocatable :: dgRp(:), dgRm(:), dgXp(:), dgXm(:)
+      complex(dp), allocatable :: dhRp(:), dhRm(:), dhXp(:), dhXm(:)
+      complex(dp), allocatable :: dfRp(:), dfRm(:), dfXp(:), dfXm(:)
+      complex(dp), allocatable :: dtRp(:), dtRm(:), dtXp(:), dtXm(:)
+      complex(dp), allocatable :: agR(:), ahR(:), afR(:), atR(:)
+      complex(dp), allocatable :: agX(:), ahX(:), afX(:), atX(:)
+
+      complex(dp), allocatable :: n_gR0(:), n_gX0(:)
+      complex(dp), allocatable :: n_gR1(:), n_gX1(:)
+      complex(dp), allocatable :: n_gR2(:), n_gX2(:)
+      complex(dp), allocatable :: n_gR3(:), n_gX3(:)
+
+      complex(dp), allocatable :: o_gR0(:), o_gX0(:)
+      complex(dp), allocatable :: o_gR1(:), o_gX1(:)
+      complex(dp), allocatable :: o_gR2(:), o_gX2(:)
+      complex(dp), allocatable :: o_gR3(:), o_gX3(:)
+
       complex(dp), allocatable :: lcurrR(:), lcurrK(:)
 !
 ! --
 !
+      if(.not.allocated(NRp)) allocate(NRp(1:sx))
+      if(.not.allocated(NRm)) allocate(NRm(1:sx))
+      if(.not.allocated(NKp)) allocate(NKp(1:sx))
+      if(.not.allocated(NKm)) allocate(NKm(1:sx))
+
       if(.not.allocated(gRp)) allocate(gRp(1:sx))
       if(.not.allocated(gRm)) allocate(gRm(1:sx))
       if(.not.allocated(tRp)) allocate(tRp(1:sx))
@@ -190,6 +213,54 @@ contains
       if(.not.allocated(X1m)) allocate(X1m(1:sx))
       if(.not.allocated(X2p)) allocate(X2p(1:sx))
       if(.not.allocated(X2m)) allocate(X2m(1:sx))
+
+      if(.not.allocated(dgRp)) allocate(dgRp(1:sx))
+      if(.not.allocated(dhRp)) allocate(dhRp(1:sx))
+      if(.not.allocated(dfRp)) allocate(dfRp(1:sx))
+      if(.not.allocated(dtRp)) allocate(dtRp(1:sx))
+      if(.not.allocated(dgRm)) allocate(dgRm(1:sx))
+      if(.not.allocated(dhRm)) allocate(dhRm(1:sx))
+      if(.not.allocated(dfRm)) allocate(dfRm(1:sx))
+      if(.not.allocated(dtRm)) allocate(dtRm(1:sx))
+
+      if(.not.allocated(dgXp)) allocate(dgXp(1:sx))
+      if(.not.allocated(dhXp)) allocate(dhXp(1:sx))
+      if(.not.allocated(dfXp)) allocate(dfXp(1:sx))
+      if(.not.allocated(dtXp)) allocate(dtXp(1:sx))
+      if(.not.allocated(dgXm)) allocate(dgXm(1:sx))
+      if(.not.allocated(dhXm)) allocate(dhXm(1:sx))
+      if(.not.allocated(dfXm)) allocate(dfXm(1:sx))
+      if(.not.allocated(dtXm)) allocate(dtXm(1:sx))
+
+      if(.not.allocated(agR)) allocate(agR(1:sx))
+      if(.not.allocated(ahR)) allocate(ahR(1:sx))
+      if(.not.allocated(afR)) allocate(afR(1:sx))
+      if(.not.allocated(atR)) allocate(atR(1:sx))
+
+      if(.not.allocated(agX)) allocate(agX(1:sx))
+      if(.not.allocated(ahX)) allocate(ahX(1:sx))
+      if(.not.allocated(afX)) allocate(afX(1:sx))
+      if(.not.allocated(atX)) allocate(atX(1:sx))
+
+      if(.not.allocated(n_gR0)) allocate(n_gR0(1:sx))
+      if(.not.allocated(n_gR1)) allocate(n_gR1(1:sx))
+      if(.not.allocated(n_gR2)) allocate(n_gR2(1:sx))
+      if(.not.allocated(n_gR3)) allocate(n_gR3(1:sx))
+
+      if(.not.allocated(n_gX0)) allocate(n_gX0(1:sx))
+      if(.not.allocated(n_gX1)) allocate(n_gX1(1:sx))
+      if(.not.allocated(n_gX2)) allocate(n_gX2(1:sx))
+      if(.not.allocated(n_gX3)) allocate(n_gX3(1:sx))
+
+      if(.not.allocated(o_gR0)) allocate(o_gR0(1:sx))
+      if(.not.allocated(o_gR1)) allocate(o_gR1(1:sx))
+      if(.not.allocated(o_gR2)) allocate(o_gR2(1:sx))
+      if(.not.allocated(o_gR3)) allocate(o_gR3(1:sx))
+
+      if(.not.allocated(o_gX0)) allocate(o_gX0(1:sx))
+      if(.not.allocated(o_gX1)) allocate(o_gX1(1:sx))
+      if(.not.allocated(o_gX2)) allocate(o_gX2(1:sx))
+      if(.not.allocated(o_gX3)) allocate(o_gX3(1:sx))
 
       if(.not.allocated(lcurrR)) allocate(lcurrR(1:sx))
       if(.not.allocated(lcurrK)) allocate(lcurrK(1:sx))
@@ -220,46 +291,52 @@ contains
 !
       wd=w*abs(grid(1)-grid(2))/2.0
       kshift = 2.0*w*etaR
+      err =100.0
+      imploop = 0  
+
+      n_gR0 = czero
+      n_gR1 = czero
+      n_gR2 = czero
+      n_gR3 = czero
+
+      n_gX0 = czero
+      n_gX1 = czero
+      n_gX2 = czero
+      n_gX3 = czero
 !
 !-- p.v > 0 --
 !
+      NRp(:)=w/((1.0+gr_1p(:,iep)*gr_2p(:,iep))*(1.0+gr_1p(:,iem)*gr_2p(:,iem)))
+      NKp(:)=w/((1.0+gr_1p(:,iep)*gr_2p(:,iep))*conjg(1.0+gr_1p(:,iem)*gr_2p(:,iem)))
+ 
       R1p(:) = alpha1p(:,iep)+beta1p(:,iem)
       R2p(:) = alpha2p(:,iep)+beta2p(:,iem)
 
-      gRp(:) =-(gr_1p(:,iep)+gr_1p(:,iem))/R1p(:)
-      tRp(:) =-(gr_2p(:,iep)+gr_2p(:,iem))/R2p(:)
-
       X1p(:) = alpha1p(:,iep)-conjg(alpha1p(:,iem))-kshift
       X2p(:) = alpha2p(:,iep)-conjg(alpha2p(:,iem))-kshift
-
-      Xxp(:) = (1.0+gr_1p(:,iep)*conjg(gr_1p(:,iem)))/X1p(:)
-      Xap(:) =-(1.0+gr_2p(:,iep)*conjg(gr_2p(:,iem)))/X2p(:)
-
-      gRpL(:) = gRp(:)
-      tRpL(:) = tRp(:)
          
-      XxpL(:) = Xxp(:)
-      XapL(:) = Xap(:)
+      gRpL(:) =-(gr_1p(:,iep)+gr_1p(:,iem))/R1p(:)
+      tRpL(:) =-(gr_2p(:,iep)+gr_2p(:,iem))/R2p(:)
+
+      XxpL(:) =-(1.0+gr_1p(:,iep)*conjg(gr_1p(:,iem)))/X1p(:)
+      XapL(:) = (1.0+gr_2p(:,iep)*conjg(gr_2p(:,iem)))/X2p(:)
 !
 !-- p.v < 0 --
 !
+      NRm(:)=w/((1.0+gr_1m(:,iep)*gr_2m(:,iep))*(1.0+gr_1m(:,iem)*gr_2m(:,iem)))
+      NKm(:)=w/((1.0+gr_1m(:,iep)*gr_2m(:,iep))*conjg(1.0+gr_1m(:,iem)*gr_2m(:,iem)))      
+
       R1m(:) = alpha1m(:,iep)+beta1m(:,iem)
       R2m(:) = alpha2m(:,iep)+beta2m(:,iem)
-
-      gRm(:) = (gr_1m(:,iep)+gr_1m(:,iem))/R1m(:)
-      tRm(:) = (gr_2m(:,iep)+gr_2m(:,iem))/R2m(:)
 
       X1m(:) = alpha1m(:,iep)-conjg(alpha1m(:,iem))-kshift
       X2m(:) = alpha2m(:,iep)-conjg(alpha2m(:,iem))-kshift
 
-      Xxm(:) =-(1.0+gr_1m(:,iep)*conjg(gr_1m(:,iem)))/X1m(:)
-      Xam(:) = (1.0+gr_2m(:,iep)*conjg(gr_2m(:,iem)))/X2m(:)
+      gRmL(:) =-(gr_1m(:,iep)+gr_1m(:,iem))/R1m(:)
+      tRmL(:) =-(gr_2m(:,iep)+gr_2m(:,iem))/R2m(:)
 
-      gRmL(:) = gRm(:)
-      tRmL(:) = tRm(:)
-      
-      XxmL(:) = Xxm(:)
-      XamL(:) = Xam(:)
+      XxmL(:) =-(1.0+gr_1m(:,iep)*conjg(gr_1m(:,iem)))/X1m(:)
+      XamL(:) = (1.0+gr_2m(:,iep)*conjg(gr_2m(:,iem)))/X2m(:)
 !
 !-- Solve for the spatial dependence
 !
@@ -267,6 +344,20 @@ contains
       told = tRmL(1)
       xold = XxpL(1)
       aold = XamL(1)
+
+      gexp   = exp(wd*R1p(1))
+      gRp(1) = gold*gexp+(1.0-gexp)*gRpL(1)
+      gexp   = exp(wd*X1p(1))
+      Xxp(1) = xold*gexp+(1.0-gexp)*XxpL(1)
+      gexp   = exp(wd*R2m(1))
+      tRm(1) = told*gexp+(1.0-gexp)*tRmL(1)
+      gexp   = exp(wd*X2m(1))
+      Xam(1) = aold*gexp+(1.0-gexp)*XamL(1)
+
+      gold = gRp(1)
+      told = tRm(1)
+      xold = Xxp(1)
+      aold = Xam(1)
  
       do i=2,sx,1
          gexp   = exp(wd*R1p(i-1))
@@ -298,6 +389,20 @@ contains
       told = tRpL(sx)
       xold = XxmL(sx)
       aold = XapL(sx)
+
+      gexp    = exp(wd*R1m(sx))
+      gRm(sx) = gold*gexp+(1.0-gexp)*gRmL(sx)
+      gexp    = exp(wd*X1m(sx))
+      Xxm(sx) = xold*gexp+(1.0-gexp)*XxmL(sx)
+      gexp    = exp(wd*R2p(sx))
+      tRp(sx) = told*gexp+(1.0-gexp)*tRpL(sx)
+      gexp    = exp(wd*X2p(sx))
+      Xap(sx) = aold*gexp+(1.0-gexp)*XapL(sx)
+
+      gold = gRm(sx)
+      told = tRp(sx)
+      xold = Xxm(sx)
+      aold = Xap(sx)
  
       do i=sx-1,1,-1
          gexp   = exp(wd*R1m(i+1))
@@ -327,31 +432,160 @@ contains
 !
 !-- Make the current
 !
-      do i = 1,sx ,1
+!     do i = 1,sx ,1
 !
 !-- Make the diagonal part of the Green's function p.v > 0, a factor two less due to averaging over direction
 !
-         NRpp=1.0/(1.0+gr_1p(i,iep)*gr_2p(i,iep))
-         NRpm=1.0/(1.0+gr_1p(i,iem)*gr_2p(i,iem))
-
-         dgRp = w*NRpp*((gr_2p(i,iep)+gr_2p(i,iem))*gRp(i) &
-                       +(gr_1p(i,iep)+gr_1p(i,iem))*tRp(i))*NRpm
-         dgXp =-w*NRpp*((Xxp(i)-gr_1p(i,iep)*Xap(i)*conjg(gr_1p(i,iem))) &
-                       -(Xap(i)-gr_2p(i,iep)*Xxp(i)*conjg(gr_2p(i,iem))))*conjg(NRpm)
-!
+!        dgRp = NRp(i)*((gr_2p(i,iep)+gr_2p(i,iem))*gRp(i) &
+!                      +(gr_1p(i,iep)+gr_1p(i,iem))*tRp(i))
+!        dgXp =-NKp(i)*((Xxp(i)-gr_1p(i,iep)*Xap(i)*conjg(gr_1p(i,iem))) &
+!                      -(Xap(i)-gr_2p(i,iep)*Xxp(i)*conjg(gr_2p(i,iem))))
+!        
 !-- Make the diagonal part of the Green's function p.v > 0
+!        
+!        dgRm = NRm(i)*((gr_2m(i,iep)+gr_2m(i,iem))*gRm(i) &
+!                      +(gr_1m(i,iep)+gr_1m(i,iem))*tRm(i))
+!        dgXm =-NKm(i)*((Xxm(i)-gr_1m(i,iep)*Xam(i)*conjg(gr_1m(i,iem))) &
+!                      -(Xam(i)-gr_2m(i,iep)*Xxm(i)*conjg(gr_2m(i,iem))))
+
+!        lcurrR(i) = -(dgRp-dgRm)*thm+thp*conjg(dgRp-dgRm)
+!        lcurrK(i) = -(thp-thm)*(dgXp-dgXm)
+!     enddo      
 !
-         NRmp=1.0/(1.0+gr_1m(i,iep)*gr_2m(i,iep))
-         NRmm=1.0/(1.0+gr_1m(i,iem)*gr_2m(i,iem))
+!-- Make the Green's function p.v > 0, a factor two less due to averaging over direction
+!
+         dgRp(:) =-NRp(:)*(gRp(:)*gr_2p(:,iem)+gr_1p(:,iep)*tRp(:))
+         dfRp(:) =-NRp(:)*(gRp(:)+gr_1p(:,iep)*tRp(:)*gr_1p(:,iem))
+         dtRp(:) = NRp(:)*(tRp(:)+gr_2p(:,iep)*gRp(:)*gr_2p(:,iem))
+         dhRp(:) = NRp(:)*(tRp(:)*gr_1p(:,iem)+gr_2p(:,iep)*gRp(:))
 
-         dgRm = w*NRmp*((gr_2m(i,iep)+gr_2m(i,iem))*gRm(i) &
-                       +(gr_1m(i,iep)+gr_1m(i,iem))*tRm(i))*NRmm
-         dgXm =-w*NRmp*((Xxm(i)-gr_1m(i,iep)*Xam(i)*conjg(gr_1m(i,iem))) &
-                       -(Xam(i)-gr_2m(i,iep)*Xxm(i)*conjg(gr_2m(i,iem))))*conjg(NRmm)
+         dgXp(:) =-NKp(:)*(Xxp(:)-gr_1p(:,iep)*Xap(:)*conjg(gr_1p(:,iem)))
+         dfXp(:) = NKp(:)*(gr_1p(:,iep)*Xap(:)-Xxp(:)*conjg(gr_1p(:,iem)))
+         dtXp(:) = NKp(:)*(gr_2p(:,iep)*Xxp(:)-Xap(:)*conjg(gr_2p(:,iem)))
+         dhXp(:) =-NKp(:)*(Xap(:)-gr_2p(:,iep)*Xxp(:)*conjg(gr_2p(:,iem)))
+!
+!-- Make the Green's funct:on p.v < 0
+!
+         dgRm(:) =-NRm(:)*(gRm(:)*gr_2m(:,iem)+gr_1m(:,iep)*tRm(:))
+         dfRm(:) =-NRm(:)*(gRm(:)+gr_1m(:,iep)*tRm(:)*gr_1m(:,iem))
+         dtRm(:) = NRm(:)*(tRm(:)+gr_2m(:,iep)*gRm(:)*gr_2m(:,iem))
+         dhRm(:) = NRm(:)*(tRm(:)*gr_1m(:,iem)+gr_2m(:,iep)*gRm(:))
 
-         lcurrR(i) = -(dgRp-dgRm)*thm+thp*conjg(dgRp-dgRm)
-         lcurrK(i) = -(thp-thm)*(dgXp-dgXm) 
-      enddo         
+         dgXm(:) =-NKm(:)*(Xxm(:)-gr_1m(:,iep)*Xam(:)*conjg(gr_1m(:,iem)))
+         dfXm(:) = NKm(:)*(gr_1m(:,iep)*Xam(:)-Xxm(:)*conjg(gr_1m(:,iem)))
+         dtXm(:) = NKm(:)*(gr_2m(:,iep)*Xxm(:)-Xam(:)*conjg(gr_2m(:,iem)))
+         dhXm(:) =-NKm(:)*(Xam(:)-gr_2m(:,iep)*Xxm(:)*conjg(gr_2m(:,iem)))
+!
+!-- Averages over directions, the minus sign due to the perturbation ~ p
+!
+         agR = (dgRp - dgRm)
+         afR = (dfRp - dfRm)
+         atR = (dtRp - dtRm)
+         ahR = (dhRp - dhRm)
+
+         agX = (dgXp - dgXm)
+         afX = (dfXp - dfXm)
+         atX = (dtXp - dtXm)
+         ahX = (dhXp - dhXm)
+
+         o_gR0 = n_gR0
+         o_gR1 = n_gR1
+         o_gR2 = n_gR2
+         o_gR3 = n_gR3
+
+         o_gX0 = n_gX0
+         o_gX1 = n_gX1
+         o_gX2 = n_gX2
+         o_gX3 = n_gX3
+
+         err = 0.0
+
+         do i = 1, sx, 1
+
+            gR(1,1) = agR(i)
+            gR(1,2) = afR(i)
+            gR(2,1) = atR(i)
+            gR(2,2) = ahR(i)
+
+            gX(1,1) = agX(i)
+            gX(1,2) = afX(i)
+            gX(2,1) = atX(i)
+            gX(2,2) = ahX(i)
+
+!-- potential scatterers
+
+            aR(1,1) = gimpP(i,1)
+            aR(1,2) = fimpP(i,1)
+            aR(2,1) = timpP(i,1)
+            aR(2,2) =-gimpP(i,1)
+
+            bR(1,1) = gimpP(i,2)
+            bR(1,2) = fimpP(i,2)
+            bR(2,1) = timpP(i,2)
+            bR(2,2) =-gimpP(i,2)
+
+            tmp = czero
+            tmp = matmul(gR,bR)
+            cR = srate(1)*matmul(aR,tmp)
+
+            bR = conjg(transpose(bR))
+            tmp = czero
+            tmp = matmul(gX,bR)
+            cX = srate(1)*matmul(aR,tmp)
+
+            n_gR0(i) = cR(1,1)
+            n_gR1(i) = cR(1,2)
+            n_gR2(i) = cR(2,1)
+            n_gR3(i) = cR(2,2)
+
+            n_gX0(i) = cX(1,1)
+            n_gX1(i) = cX(1,2)
+            n_gX2(i) = cX(2,1)
+            n_gX3(i) = cX(2,2)
+
+!-- magnetic scatterers
+
+            aR(1,1) = gimpM(i,1)
+            aR(1,2) = fimpM(i,1)
+            aR(2,1) = timpM(i,1)
+            aR(2,2) =-gimpM(i,1)
+
+            bR(1,1) = gimpM(i,2)
+            bR(1,2) = fimpM(i,2)
+            bR(2,1) = timpM(i,2)
+            bR(2,2) =-gimpM(i,2)
+
+            tmp = czero
+            tmp = matmul(gR,bR)
+            cR = srate(2)*matmul(aR,tmp)
+
+            bR = conjg(transpose(bR))
+            tmp = czero
+            tmp = matmul(gX,bR)
+            cX = srate(2)*matmul(aR,tmp)
+
+            n_gR0(i) = n_gR0(i)+cR(1,1)
+            n_gR1(i) = n_gR1(i)+cR(1,2)
+            n_gR2(i) = n_gR2(i)+cR(2,1)
+            n_gR3(i) = n_gR3(i)+cR(2,2)
+
+            n_gX0(i) = n_gX0(i)+cX(1,1)
+            n_gX1(i) = n_gX1(i)+cX(1,2)
+            n_gX2(i) = n_gX2(i)+cX(2,1)
+            n_gX3(i) = n_gX3(i)+cX(2,2)
+
+            err = err+abs(n_gR0(i)-o_gR0(i))**2+abs(n_gR1(i)-o_gR1(i))**2+ &
+                      abs(n_gR2(i)-o_gR2(i))**2+abs(n_gR3(i)-o_gR3(i))**2
+
+            err = err+abs(n_gX0(i)-o_gX0(i))**2+abs(n_gX1(i)-o_gX1(i))**2+ &
+                      abs(n_gX2(i)-o_gX2(i))**2+abs(n_gX3(i)-o_gX3(i))**2
+         enddo
+         err = sqrt(err)
+
+!-- Current contribution
+!
+      lcurrR =  (dgRp-dhRp+(dgRm-dhRm))*thm-thp*conjg(dgRp-dhRp+(dgRm-dhRm))
+      lcurrK =  (thp-thm)*(dgXp-dhXp+(dgXm-dhXm))
 
       icond = 0.25*(lcurrR+lcurrK)
 

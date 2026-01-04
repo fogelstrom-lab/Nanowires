@@ -1,8 +1,8 @@
 0.001   ! Temperature
- 0.25   ! The nanowire length
+ 0.05   ! The nanowire length
  0.05   ! The length of the uncovered central part of the nanowire
  0.01   ! The discretisation step
-0.25    ! Phase difference (in pis)
+1.00    ! Phase difference (in pis)
 0.0100  ! Inverse mean-free path (potential tau(1))
 0.0000  ! Potential scattering strength (sigma(1))
 0.0010  ! Inverse mean-free path (magnetic tau(2))

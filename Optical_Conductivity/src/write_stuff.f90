@@ -192,20 +192,34 @@ contains
       ix=sx/2
 
       if(itype ==0) then
+         open(80,file='DoS_L.dat',status='unknown')
+         open(81,file='DoS_C.dat',status='unknown')
+         open(82,file='DoS_R.dat',status='unknown')
+
+         open(90,file='Gimp_C.dat',status='unknown')
+         open(91,file='Dimp_C.dat',status='unknown')
+         open(92,file='Timp_C.dat',status='unknown')
+         open(93,file='Himp_C.dat',status='unknown')
+
          do ii=-iemax,iemax,1
             E0=er(ii)/delta0
             write(80,1000) E0,-aimag(avg( 1,ii))
             write(81,1000) E0,-aimag(avg(ix,ii))
             write(82,1000) E0,-aimag(avg(sx,ii))
-         enddo
-
-         do ii=-iemax,iemax,1
-            E0=er(ii)/delta0
+         
             write(90,1000) E0,gimp(ix,ii)+uimp(ix,ii)
             write(91,1000) E0,fimp(ix,ii)
             write(92,1000) E0,timp(ix,ii)
             write(93,1000) E0,gimp(ix,ii)-uimp(ix,ii)
          enddo
+         close(80)
+         close(81)
+         close(82)
+
+         close(90)
+         close(91)
+         close(92)
+         close(93)
       else
          if(itype == 1) x = tau(1)
          if(itype == 2) x = tau(2)

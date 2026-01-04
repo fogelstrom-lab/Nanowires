@@ -66,16 +66,17 @@ contains
 !
       integer, intent(in) :: ien, icmptyp
       integer, intent(out) :: icmp
-      real(dp), intent(inout) :: err
-
+      real(dp), intent(inout) :: err 
+ 
       complex(dp), allocatable :: gimp1(:),fimp1(:),timp1(:),dh(:)
-      integer :: i1, i2, ic
-      real(dp) :: x, x1, x2, p1, p2, ex, em, ah
-
+      integer :: i1, i2, ic, ioshift    
+      real(dp) :: x, x1, x2, p1, p2, ex, em, ah 
+ 
       save
 
       icmp = 0
       ic = sx/2
+      ioshift = ien
 
       if(.not.allocated(dh)) allocate(dh(1:sx))
       if(.not.allocated(gimp1)) allocate(gimp1(1:sx))
@@ -135,7 +136,7 @@ contains
          timp1 = timp0
 
          call get_gammas
-         call get_averages(ien,icmptyp)
+         call get_averages(ioshift,icmptyp)
       
          err=0.0
          dh=gimp0-gimp1
@@ -154,16 +155,32 @@ contains
 
          icmp=icmp+1
       enddo
-
+!
+! -- Save the leading-order impurity self-energies
+!
       if(icmptyp == 1) then
          gimp(:,ien) = gimp0
          fimp(:,ien) = fimp0
          timp(:,ien) = timp0
          uimp(:,ien) = uimp0
       endif
-!     if(icmptyp == 2) then
-!        if(myrank == 0) write(30,1000) ex, gimp0(ic), fimp0(ic), timp0(ic), icmp
-!     endif
+!
+! -- Save the t-matrices for linear response
+!
+      if(icmptyp == 2) then
+         if(abs(srate(1)).gt. 1e-14) then
+             gimpP(:,ioshift) = gimpP(:,ioshift)/srate(1)
+             fimpP(:,ioshift) = fimpP(:,ioshift)/srate(1)
+             timpP(:,ioshift) = timpP(:,ioshift)/srate(1)
+          endif
+
+          if(abs(srate(2)).gt. 1e-14) then
+             gimpM(:,ioshift) = gimpM(:,ioshift)/srate(2)
+             fimpM(:,ioshift) = fimpM(:,ioshift)/srate(2)
+             timpM(:,ioshift) = timpM(:,ioshift)/srate(2)
+          endif
+      endif
+
  1000 format(7(1x,e10.4),1x,i7)
 !
 !---------------------------------------------------------------------
@@ -177,7 +194,7 @@ contains
 !----------------------------------------------------------------------
 !
       integer, intent(in) :: icmptyp, ien
-      integer :: it,ii
+      integer :: it, ii, ioshift
       real(dp) :: magn, magd, half
       complex(dp) :: g1, g2, g3, g32, norm, dig, cj, Denom, D1, pg
 !
@@ -185,6 +202,9 @@ contains
 !
 !-- Perform the required integrations
 !
+      if(icmptyp == 1) ioshift = 1
+      if(icmptyp == 2) ioshift = ien
+
       half = 0.5_dp
       magd = 4.0_dp*sigma(2)*(1.0_dp-sigma(2))
       magn = 2.0_dp*(1.0_dp-sigma(2))*srate(2)
@@ -233,9 +253,9 @@ contains
 !
          Denom = cone/(cone-sigma(1)*(cone+norm))
          cj = srate(1)*Denom
-         fimp0(ii) = cj*g1
-         timp0(ii) = cj*g2
-         gimp0(ii) = cj*g3
+         fimpP(ii,ioshift) = cj*g1
+         timpP(ii,ioshift) = cj*g2
+         gimpP(ii,ioshift) = cj*g3
 
          uimp0(ii) = srate(0)*cj
 !
@@ -246,11 +266,15 @@ contains
          cj = srate(2)*D1*Denom
          pg = magn*Denom
 
-         fimp0(ii) = fimp0(ii)-cj*g1
-         timp0(ii) = timp0(ii)-cj*g2
-         gimp0(ii) = gimp0(ii)-(cj-pg)*g3
+         fimpM(ii,ioshift) = -cj*g1
+         timpM(ii,ioshift) = -cj*g2
+         gimpM(ii,ioshift) = -(cj-pg)*g3
 
       enddo
+
+      gimp0(1:sx) = gimpP(1:sx,ioshift) + gimpM(1:sx,ioshift)
+      fimp0(1:sx) = fimpP(1:sx,ioshift) + fimpM(1:sx,ioshift)
+      timp0(1:sx) = timpP(1:sx,ioshift) + timpM(1:sx,ioshift)
 !
 !---------------------------------------------------------------------
 !
@@ -415,7 +439,7 @@ contains
       icmp = 0
 !
       en = energy+w*etaR
-      call get_rimps(0, err, icmp, icmptyp)
+      call get_rimps(iep, err, icmp, icmptyp)
 
       s11(:) =    en-gimp0(:)-uimp0(:)
       s22(:) =    en-gimp0(:)+uimp0(:)

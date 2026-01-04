@@ -2,8 +2,10 @@ module integration_vec
   use iso_fortran_env, only: dp => real64
   implicit none
   private
+
   public :: integrate_vec_adaptive
 
+  ! Interface: vector-valued complex integrand
   abstract interface
     subroutine f_vec_interface(x, f)
       import dp
@@ -14,11 +16,20 @@ module integration_vec
 
 contains
 
-  subroutine integrate_vec_adaptive(f_vec, a, b, f_int, atol, rtol, max_depth)
+  !--------------------------------------------------------------------
+  ! Adaptive Simpson integration of a complex vector-valued function.
+  !
+  ! f_vec:   user-supplied routine: given x, returns f(x)(:)
+  ! a, b:    integration limits
+  ! f_int:   result vector; size determines number of components
+  ! tol:     requested absolute tolerance (on max-norm of error)
+  ! max_depth (optional): maximum recursion depth (default: 20)
+  !--------------------------------------------------------------------
+  subroutine integrate_vec_adaptive(f_vec, a, b, f_int, tol, max_depth)
     procedure(f_vec_interface)       :: f_vec
     real(dp),          intent(in)    :: a, b
-    complex(dp),       intent(out)   :: f_int(:)
-    real(dp),          intent(in)    :: atol, rtol
+    complex(dp),       intent(out)   :: f_int(:)   ! caller allocates, sets size
+    real(dp),          intent(in)    :: tol
     integer, optional, intent(in)    :: max_depth
 
     integer      :: depth_max, ncomp
@@ -35,6 +46,7 @@ contains
 
     ncomp = size(f_int)
 
+    ! Initial function evaluations
     call f_vec(a, fa)
     call f_vec(b, fb)
     m = 0.5_dp*(a + b)
@@ -43,12 +55,16 @@ contains
     h  = b - a
     S0 = (h / 6.0_dp) * (fa + 4.0_dp*fm + fb)
 
-    call asimpson_vec(a, b, fa, fm, fb, S0, atol, rtol, 0, depth_max, f_int, ncomp)
+    call asimpson_vec(a, b, fa, fm, fb, S0, tol, 0, depth_max, f_int, ncomp)
 
   contains
 
-    recursive subroutine asimpson_vec(a, b, fa, fm, fb, S, atol, rtol, depth, depth_max, result, ncomp)
-      real(dp),    intent(in) :: a, b, atol, rtol
+    !--------------------------------------------------------------
+    ! Internal recursive adaptive Simpson.
+    ! Note: has host access to f_vec, so we don't pass it as arg.
+    !--------------------------------------------------------------
+    recursive subroutine asimpson_vec(a, b, fa, fm, fb, S, tol, depth, depth_max, result, ncomp)
+      real(dp),    intent(in) :: a, b, tol
       integer,     intent(in) :: depth, depth_max, ncomp
       complex(dp), intent(in) :: fa(ncomp), fm(ncomp), fb(ncomp)
       complex(dp), intent(in) :: S(ncomp)
@@ -58,7 +74,7 @@ contains
       complex(dp) :: fl(ncomp), fr(ncomp)
       complex(dp) :: S_left(ncomp), S_right(ncomp), S_lr(ncomp)
       complex(dp) :: resL(ncomp), resR(ncomp)
-      real(dp)    :: err, scale, tol_eff
+      real(dp)    :: err
 
       h  = b - a
       m  = 0.5_dp*(a + b)
@@ -72,16 +88,13 @@ contains
       S_right = (h / 12.0_dp) * (fm + 4.0_dp*fr + fb)
       S_lr    = S_left + S_right
 
-      err   = maxval( abs(S_lr - S) )
-      scale = max( maxval(abs(S_lr)), maxval(abs(S)) )
-      tol_eff = max(atol, rtol * scale)
+      err = maxval( abs(S_lr - S) )
 
-      if (err <= 15.0_dp*tol_eff .or. depth >= depth_max) then
+      if (err <= 15.0_dp*tol .or. depth >= depth_max) then
          result = S_lr
       else
-         ! Dela toleransen mellan delintervallen (konservativt)
-         call asimpson_vec(a, m, fa, fl, fm, S_left,  0.5_dp*atol, rtol, depth+1, depth_max, resL, ncomp)
-         call asimpson_vec(m, b, fm, fr, fb, S_right, 0.5_dp*atol, rtol, depth+1, depth_max, resR, ncomp)
+         call asimpson_vec(a, m, fa, fl, fm, S_left,  0.5_dp*tol, depth+1, depth_max, resL, ncomp)
+         call asimpson_vec(m, b, fm, fr, fb, S_right, 0.5_dp*tol, depth+1, depth_max, resR, ncomp)
          result = resL + resR
       end if
     end subroutine asimpson_vec

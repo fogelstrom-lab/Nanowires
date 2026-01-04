@@ -2,7 +2,6 @@ FC = mpifort
 
 SRC_DIR = src
 OBJ_DIR = build
-
 BUILD ?= release
 
 FFLAGS_COMMON = -std=f2008 -mcpu=apple-m3 -ftree-vectorize -funroll-loops -fno-math-errno
@@ -17,7 +16,7 @@ else
 endif
 
 # --- source files (WITHOUT path)
-SRCS = math_utils.f90 mpi_utils.f90 qc_data.f90 integration_vec.f90 \
+SRCS = qc_data.f90 math_utils.f90 mpi_utils.f90 integration_vec.f90 \
        write_stuff.f90 qc_farm.f90 qc_cond.f90 qc_mod.f90 qc_main.f90
 
 # --- derived object list
