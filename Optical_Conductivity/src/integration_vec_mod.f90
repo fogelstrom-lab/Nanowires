@@ -47,41 +47,42 @@ contains
 
   contains
 
-    recursive subroutine asimpson_vec(a, b, fa, fm, fb, S, atol, rtol, depth, depth_max, result, ncomp)
-      real(dp),    intent(in) :: a, b, atol, rtol
-      integer,     intent(in) :: depth, depth_max, ncomp
-      complex(dp), intent(in) :: fa(ncomp), fm(ncomp), fb(ncomp)
-      complex(dp), intent(in) :: S(ncomp)
-      complex(dp), intent(out):: result(ncomp)
+    recursive subroutine asimpson_vec(a_loc, b_loc, fa_loc, fm_loc, fb_loc, S, atol_loc, &
+                                      rtol_loc, depth, depth_max_loc, result, ncomp_loc)
+      real(dp),    intent(in) :: a_loc, b_loc, atol_loc, rtol_loc
+      integer,     intent(in) :: depth, depth_max_loc, ncomp_loc
+      complex(dp), intent(in) :: fa_loc(ncomp_loc), fm_loc(ncomp_loc), fb_loc(ncomp_loc)
+      complex(dp), intent(in) :: S(ncomp_loc)
+      complex(dp), intent(out):: result(ncomp_loc)
 
-      real(dp)    :: h, m, m1, m2
-      complex(dp) :: fl(ncomp), fr(ncomp)
-      complex(dp) :: S_left(ncomp), S_right(ncomp), S_lr(ncomp)
-      complex(dp) :: resL(ncomp), resR(ncomp)
-      real(dp)    :: err, scale, tol_eff
+      real(dp)    :: h_loc, m_loc, m1, m2
+      complex(dp) :: fl(ncomp_loc), fr(ncomp_loc)
+      complex(dp) :: S_left(ncomp_loc), S_right(ncomp_loc), S_lr(ncomp_loc)
+      complex(dp) :: resL(ncomp_loc), resR(ncomp_loc)
+      real(dp)    :: err, scale, tol_loc_eff
 
-      h  = b - a
-      m  = 0.5_dp*(a + b)
-      m1 = 0.5_dp*(a + m)
-      m2 = 0.5_dp*(m + b)
+      h_loc  =         b_loc - a_loc
+      m_loc  = 0.5_dp*(a_loc + b_loc)
+      m1     = 0.5_dp*(a_loc + m_loc)
+      m2     = 0.5_dp*(m_loc + b_loc)
 
       call f_vec(m1, fl)
       call f_vec(m2, fr)
 
-      S_left  = (h / 12.0_dp) * (fa + 4.0_dp*fl + fm)
-      S_right = (h / 12.0_dp) * (fm + 4.0_dp*fr + fb)
+      S_left  = (h / 12.0_dp) * (fa_loc + 4.0_dp*fl + fm_loc)
+      S_right = (h / 12.0_dp) * (fm_loc + 4.0_dp*fr + fb_loc)
       S_lr    = S_left + S_right
 
       err   = maxval( abs(S_lr - S) )
       scale = max( maxval(abs(S_lr)), maxval(abs(S)) )
-      tol_eff = max(atol, rtol * scale)
+      tol_loc_eff = max(atol_loc, rtol_loc * scale)
 
-      if (err <= 5.0_dp*tol_eff .or. depth >= depth_max) then
+      if (err <= 15.0_dp*tol_loc_eff .or. depth >= depth_max_loc) then
          result = S_lr
       else
-         ! Dela toleransen mellan delintervallen (konservativt)
-         call asimpson_vec(a, m, fa, fl, fm, S_left,  0.5_dp*atol, rtol, depth+1, depth_max, resL, ncomp)
-         call asimpson_vec(m, b, fm, fr, fb, S_right, 0.5_dp*atol, rtol, depth+1, depth_max, resR, ncomp)
+         ! Dela tol_loceransen mellan delintervallen (konservativt)
+         call asimpson_vec(a_loc, m, fa_loc, fl, fm_loc, S_left,  0.5_dp*atol_loc, rtol_loc, depth+1, depth_max, resL, ncomp_loc)
+         call asimpson_vec(m, b_loc, fm_loc, fr, fb_loc, S_right, 0.5_dp*atol_loc, rtol_loc, depth+1, depth_max, resR, ncomp_loc)
          result = resL + resR
       end if
     end subroutine asimpson_vec
