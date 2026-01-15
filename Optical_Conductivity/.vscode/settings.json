@@ -1,0 +1,31 @@
+{
+  "terminal.integrated.env.osx": {
+    "PATH": "${env:PATH}:/Users/dittnamn/.local/bin"
+  },
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:PATH}:/home/dittnamn/.local/bin"
+  },
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:PATH};C:\\Users\\DittAnvändarnamn\\AppData\\Local\\Programs\\Python\\Python310\\Scripts"
+  }
+  "fortran.fortls.path": "fortls",
+  "fortran.fortls.arguments": [
+    "--nthreads=6",
+    "--incremental_sync",
+    "--lowercase_intrinsics",
+    "--hover_signature",
+    "--use_signature_help"
+  ],
+  "fortran.linter.compiler": "mpifort",
+  "fortran.linter.enabled": true,
+  "files.associations": {
+    "*.F90": "fortran",
+    "*.f90": "fortran",
+    "*.inc": "fortran"
+  },
+  "search.exclude": {
+    "**/*.mod": true,
+    "**/build": true
+  },
+  "editor.fontSize": 14
+}

@@ -10,28 +10,23 @@ module qc_data
   real(dp) :: pi, Rx, temp, delta0, etaR, phase, error_tol, Ngap, ndeltas, Ec, emax, de, ex_old
   integer :: sx, iemax
 
-  complex(dp):: gimp0, fimp0, timp0, uimp0
+  complex(dp), allocatable :: gr_1(:,:), gr_2(:,:), delx(:)
+  complex(dp), allocatable :: gimp0(:), fimp0(:), timp0(:), uimp0(:)
+  complex(dp), allocatable :: gimpP(:,:), fimpP(:,:), timpP(:,:) 
+  complex(dp), allocatable :: gimpM(:,:), fimpM(:,:), timpM(:,:)
 
-  complex(dp), allocatable :: gr_1(:), gr_2(:)
-  complex(dp), allocatable :: gimpP(:), fimpP(:), timpP(:) 
-  complex(dp), allocatable :: gimpM(:), fimpM(:), timpM(:)
-
-  real(dp),    allocatable :: er(:)
+  real(dp),    allocatable :: grid(:), er(:)
   real(dp)                 :: tau(2),sigma(2), srate(0:2)
   complex(dp) :: delL, delR
 
-  complex(dp), allocatable :: gr_1p(:), gr_2p(:), gr_1m(:), gr_2m(:)
+  complex(dp), allocatable :: avj(:,:), avg(:,:), avf(:,:), avt(:,:)
+  complex(dp), allocatable :: gr_1p(:,:), gr_2p(:,:), gr_1m(:,:), gr_2m(:,:)
+  complex(dp), allocatable ::  gimp(:,:),  fimp(:,:),  timp(:,:), uimp(:,:)
 
-  complex(dp), allocatable ::  lavj(:), lavg(:), lavf(:), lavt(:)
-  complex(dp), allocatable :: lgimp(:), lfimp(:), ltimp(:), luimp(:)
-
-  complex(dp), allocatable ::  avj(:),  avg(:),  avf(:),  avt(:)
-  complex(dp), allocatable :: gimp(:), fimp(:), timp(:), uimp(:)
-
-  complex(dp), allocatable :: alpha1p(:), beta1p(:)
-  complex(dp), allocatable :: alpha1m(:), beta1m(:)
-  complex(dp), allocatable :: alpha2p(:), beta2p(:)
-  complex(dp), allocatable :: alpha2m(:), beta2m(:)
+  complex(dp), allocatable :: alpha1p(:,:), beta1p(:,:)
+  complex(dp), allocatable :: alpha1m(:,:), beta1m(:,:)
+  complex(dp), allocatable :: alpha2p(:,:), beta2p(:,:)
+  complex(dp), allocatable :: alpha2m(:,:), beta2m(:,:)
 
 
 ! MPI variables

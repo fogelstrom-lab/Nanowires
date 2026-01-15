@@ -67,15 +67,44 @@ contains
       call MPI_Bcast(Emax      , 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
       call MPI_Bcast(iemax     , 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
       call MPI_Bcast(error_tol , 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+      
 !
 ! - set up the spatial grid and the order parameter profile
 !
       Ngap = 0.5_dp*Ngap
 
-      sx      = 1 !int(Rx/dx)        
+      sx      = int(Rx/dx)        
+      if(mod(sx,2).ne. 0) sx = sx+1   ! even number of space steps
+      if(myrank==0) write(*,*) max(1,sx/10)
 
-      DelR =  delta0 
+      x       = Rx/float(sx)
+      halfway = Rx/2.0
+      if(myrank ==0) write(*,*) ' # steps', sx,' per length ',Rx,x
+
+      if(.not.allocated(grid)) allocate(grid(1:sx))
+      do ii=1,sx,1
+         grid(ii)=(float(ii)-0.5)*x-halfway
+      enddo
+
+      op   = delta0*exp(w*phase)
+      DelR =       op 
       DelL =  delta0
+
+      if(.not.allocated(delx)) allocate(delx(1:sx))
+      delx = czero
+      delx(1) = delL 
+      delX(sx) = delR
+
+!       do ii=1,sx
+!          if(grid(ii) < -Ngap) then
+!             delx(ii)= DelL
+!          endif
+!          if(grid(ii) > Ngap) then
+!             delx(ii)= DelR 
+!          endif
+!          if(myrank == 0) write(2,1000) grid(ii),delx(ii)
+!       enddo
+!       if(myrank == 0) close(2)
 !
 ! - set up the energy grid
 !
@@ -96,84 +125,70 @@ contains
       srate(1) = tau(1)*delta0
       srate(2) = tau(2)*delta0
 
-      if(.not.allocated(uimp)) allocate(uimp(-iemax:iemax))
-      if(.not.allocated(gimp)) allocate(gimp(-iemax:iemax))
-      if(.not.allocated(fimp)) allocate(fimp(-iemax:iemax))
-      if(.not.allocated(timp)) allocate(timp(-iemax:iemax))
+      if(.not.allocated(uimp)) allocate(uimp(1:sx, -iemax:iemax))
+      if(.not.allocated(gimp)) allocate(gimp(1:sx, -iemax:iemax))
+      if(.not.allocated(fimp)) allocate(fimp(1:sx, -iemax:iemax))
+      if(.not.allocated(timp)) allocate(timp(1:sx, -iemax:iemax))
       uimp = czero
       gimp = czero
       fimp = czero
       timp = czero
 
-      if(.not.allocated(luimp)) allocate(luimp(-iemax:iemax))
-      if(.not.allocated(lgimp)) allocate(lgimp(-iemax:iemax))
-      if(.not.allocated(lfimp)) allocate(lfimp(-iemax:iemax))
-      if(.not.allocated(ltimp)) allocate(ltimp(-iemax:iemax))
-      luimp = czero
-      lgimp = czero
-      lfimp = czero
-      ltimp = czero
-
+      if(.not.allocated(uimp0)) allocate(uimp0(1:sx))
+      if(.not.allocated(gimp0)) allocate(gimp0(1:sx))
+      if(.not.allocated(fimp0)) allocate(fimp0(1:sx))
+      if(.not.allocated(timp0)) allocate(timp0(1:sx))
       gimp0 = czero
       fimp0 = czero
       timp0 = czero
 
-      if(.not.allocated(gimpP)) allocate(gimpP(2))
-      if(.not.allocated(fimpP)) allocate(fimpP(2))
-      if(.not.allocated(timpP)) allocate(timpP(2))
+      if(.not.allocated(gimpP)) allocate(gimpP(1:sx,2))
+      if(.not.allocated(fimpP)) allocate(fimpP(1:sx,2))
+      if(.not.allocated(timpP)) allocate(timpP(1:sx,2))
       gimpP = czero
       fimpP = czero
       timpP = czero
 
-      if(.not.allocated(gimpM)) allocate(gimpM(2))
-      if(.not.allocated(fimpM)) allocate(fimpM(2))
-      if(.not.allocated(timpM)) allocate(timpM(2))
+      if(.not.allocated(gimpM)) allocate(gimpM(1:sx,2))
+      if(.not.allocated(fimpM)) allocate(fimpM(1:sx,2))
+      if(.not.allocated(timpM)) allocate(timpM(1:sx,2))
       gimpM = czero
       fimpM = czero
       timpM = czero
+
 !
 !-- Leading-order quantities that are saved for later
 !
-      if(.not. allocated(gr_1)) allocate(gr_1(2))
-      if(.not. allocated(gr_2)) allocate(gr_2(2))
+      if(.not. allocated(gr_1)) allocate(gr_1(1:sx,2))
+      if(.not. allocated(gr_2)) allocate(gr_2(1:sx,2))
 
-      if(.not.allocated(avj)) allocate(avj(-iemax:iemax))
-      if(.not.allocated(avg)) allocate(avg(-iemax:iemax))
-      if(.not.allocated(avf)) allocate(avf(-iemax:iemax))
-      if(.not.allocated(avt)) allocate(avt(-iemax:iemax))
+      if(.not.allocated(avj)) allocate(avj(1:sx, -iemax:iemax))
+      if(.not.allocated(avg)) allocate(avg(1:sx, -iemax:iemax))
+      if(.not.allocated(avf)) allocate(avf(1:sx, -iemax:iemax))
+      if(.not.allocated(avt)) allocate(avt(1:sx, -iemax:iemax))
 
       avj = czero
       avg = czero
       avf = czero
       avt = czero
-
-      if(.not.allocated(lavj)) allocate(lavj(-iemax:iemax))
-      if(.not.allocated(lavg)) allocate(lavg(-iemax:iemax))
-      if(.not.allocated(lavf)) allocate(lavf(-iemax:iemax))
-      if(.not.allocated(lavt)) allocate(lavt(-iemax:iemax))
-
-      lavj = czero
-      lavg = czero
-      lavf = czero
-      lavt = czero
 !
 !-- For the linear response part (1 refers to non-tilded, 2 to tilded quanities, p/m is p.v >/< 0 
 !
-      if(.not.allocated(gr_1p)) allocate(gr_1p(2))
-      if(.not.allocated(gr_2p)) allocate(gr_2p(2))
+      if(.not.allocated(gr_1p)) allocate(gr_1p(1:sx,2))
+      if(.not.allocated(gr_2p)) allocate(gr_2p(1:sx,2))
 
-      if(.not.allocated(alpha1p))  allocate(alpha1p(2))
-      if(.not.allocated(alpha2p))  allocate(alpha2p(2))
-      if(.not.allocated( beta1p))  allocate( beta1p(2))
-      if(.not.allocated( beta2p))  allocate( beta2p(2))
+      if(.not.allocated(alpha1p))  allocate(alpha1p(1:sx,2))
+      if(.not.allocated(alpha2p))  allocate(alpha2p(1:sx,2))
+      if(.not.allocated( beta1p))  allocate( beta1p(1:sx,2))
+      if(.not.allocated( beta2p))  allocate( beta2p(1:sx,2))
 
-      if(.not.allocated(gr_1m)) allocate(gr_1m(2))
-      if(.not.allocated(gr_2m)) allocate(gr_2m(2))
+      if(.not.allocated(gr_1m)) allocate(gr_1m(1:sx,2))
+      if(.not.allocated(gr_2m)) allocate(gr_2m(1:sx,2))
 
-      if(.not.allocated(alpha1m))  allocate(alpha1m(2))
-      if(.not.allocated(alpha2m))  allocate(alpha2m(2))
-      if(.not.allocated( beta1m))  allocate( beta1m(2))
-      if(.not.allocated( beta2m))  allocate( beta2m(2))
+      if(.not.allocated(alpha1m))  allocate(alpha1m(1:sx,2))
+      if(.not.allocated(alpha2m))  allocate(alpha2m(1:sx,2))
+      if(.not.allocated( beta1m))  allocate( beta1m(1:sx,2))
+      if(.not.allocated( beta2m))  allocate( beta2m(1:sx,2))
 !
 ! small test of the interpolation skeme
 !
@@ -222,7 +237,7 @@ contains
          close(3)
          close(4)
       endif
-      
+
  1000 format(9(1x,e12.6))
  1500 format(a,i5)
  1510 format(a,f8.4)
@@ -242,11 +257,12 @@ contains
       real(dp) :: errt
 
       errt=0.0
+      i=max(sx/3,1)
       do ie=-iemax,iemax,1
          if(ie.ne.0) then
-            errt=errt+abs(gimp(ie)+conjg(gimp(-ie))) &
-                     +abs(fimp(ie)-conjg(timp(-ie))) &
-                     +abs(timp(ie)-conjg(fimp(-ie)))
+            errt=errt+abs(gimp(i,ie)+conjg(gimp(i,-ie))) &
+                     +abs(fimp(i,ie)-conjg(timp(i,-ie))) &
+                     +abs(timp(i,ie)-conjg(fimp(i,-ie)))
          endif
       enddo
       write(*,*) ' Tilde symmetry to ', errt
@@ -271,10 +287,10 @@ contains
 
       etaR_org = etaR
 
-      do while (etaR >= etaR_org/(8.0*4096.0))
+      do while (etaR >= etaR_org/(2.0*4096.0))
          call get_ses(counter,err)
          gp = etaR / delta0
-         if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2)
+         if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2),' Ngap =',Ngap*2.0_dp
          etaR = etaR/2.0
       enddo
       etaR = etaR*2.0
@@ -297,7 +313,26 @@ contains
          if(myrank == 0) write(*,*) ien, energy/delta0, idum
       end do
 
- 1000 format(a,e12.6,' ( iterations=',i8,')',a,2(1x,f8.4))
+      if(myrank == 0 .and. iprint== 0) then
+         close(500)
+         close(501)
+         close(502)
+         close(503)
+         close(600)
+         close(601)
+         close(602)
+         close(603)
+         close(700)
+         close(701)
+         close(702)
+         close(703)
+         close(800)
+         close(801)
+         close(802)
+         close(803)
+      endif
+
+ 1000 format(a,e12.6,' ( iterations=',i8,')',a,2(1x,f8.4),a,f8.4)
 !1100 format(a,2(1x,f7.4),a,10(1x,e14.8))
 !1200 format(10(1x,e14.8))
 ! 

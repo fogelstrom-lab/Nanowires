@@ -271,7 +271,7 @@ contains
 
       etaR_org = etaR
 
-      do while (etaR >= etaR_org/(8.0*4096.0))
+      do while (etaR >= etaR_org/(2.0*4096.0))
          call get_ses(counter,err)
          gp = etaR / delta0
          if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2)

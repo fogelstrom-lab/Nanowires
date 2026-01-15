@@ -1,6 +1,6 @@
 FC = mpifort
 
-SRC_DIR = src
+SRC_DIR = src_wire
 OBJ_DIR = build
 BUILD ?= release
 
@@ -16,7 +16,7 @@ else
 endif
 
 # --- source files (WITHOUT path)
-SRCS = math_utils.f90 mpi_utils.f90 qc_data.f90 integration_scalar.f90 \
+SRCS = math_utils.f90 mpi_utils.f90 qc_data.f90 integration_vec.f90 \
        write_stuff.f90 qc_farm.f90 qc_cond.f90 qc_mod.f90 qc_main.f90
 
 # --- derived object list

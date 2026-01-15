@@ -1,0 +1,12 @@
+{
+  "source_dirs": [
+    "src",
+    "include"
+  ],
+  "include_dirs": [
+    "/opt/homebrew/opt/open-mpi/include"
+  ],
+  "exclude_dirs": [
+    "build"
+  ]
+}
