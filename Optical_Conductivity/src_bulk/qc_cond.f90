@@ -182,6 +182,9 @@ contains
       maxloop = 1 
       imploop = 0  
 !
+!  Note that advanced coherence functions are computed by symmetry: a =-conjg(\tilde r)
+!  and similarly for \tilde a. 
+!
 !-- p.v > 0 --
 !
       NRp=-w/((1.0+gr_1p(iep)*gr_2p(iep))*(1.0+gr_1p(iem)*gr_2p(iem)))
@@ -213,8 +216,8 @@ contains
 
          vp = cone*dth
          vt =-cone*dth
-         Xxp =-(vp-gr_1p(iep)*vt*conjg(gr_1p(iem)))/X1p 
-         Xap = (vt-gr_2p(iep)*vp*conjg(gr_2p(iem)))/X2p 
+         Xxp =-(vp-gr_1p(iep)*vt*conjg(gr_1p(iem)))/X1p
+         Xap =-(vt-gr_2p(iep)*vp*conjg(gr_2p(iem)))/X2p
 
 !
 !-- p.v < 0 --  The vertex corrections ~ p and thus the sign change in vp and vt
@@ -226,8 +229,8 @@ contains
 
          vp =-cone*dth
          vt = cone*dth
-         Xxm =-(vp-gr_1m(iep)*vt*conjg(gr_1m(iem)))/X1m 
-         Xam = (vt-gr_2m(iep)*vp*conjg(gr_2m(iem)))/X2m 
+         Xxm =-(vp-gr_1m(iep)*vt*conjg(gr_1m(iem)))/X1m
+         Xam =-(vt-gr_2m(iep)*vp*conjg(gr_2m(iem)))/X2m
 
 !
 !-- Make the Green's function p.v > 0, a factor two less due to averaging over direction
@@ -237,10 +240,10 @@ contains
          dtRp = NRp*(tRp-gr_2p(iep)*gRp*gr_2p(iem))
          dhRp = NRp*(tRp*gr_1p(iem)+gr_2p(iep)*gRp)
 
-         dgXp = NKp*(Xxp+gr_1p(iep)*Xap*conjg(gr_1p(iem)))
+         dgXp = NKp*(Xxp-gr_1p(iep)*Xap*conjg(gr_1p(iem)))
          dfXp =-NKp*(gr_1p(iep)*Xap-Xxp*conjg(gr_1p(iem)))
          dtXp = NKp*(gr_2p(iep)*Xxp-Xap*conjg(gr_2p(iem)))
-         dhXp = NKp*(Xap+gr_2p(iep)*Xxp*conjg(gr_2p(iem)))
+         dhXp = NKp*(Xap-gr_2p(iep)*Xxp*conjg(gr_2p(iem)))
 !
 !-- Make the Green's funct:on p.v < 0
 !
@@ -249,15 +252,15 @@ contains
          dtRm = NRm*(tRm-gr_2m(iep)*gRm*gr_2m(iem))
          dhRm = NRm*(tRm*gr_1m(iem)+gr_2m(iep)*gRm)
 
-         dgXm = NKm*(Xxm+gr_1m(iep)*Xam*conjg(gr_1m(iem)))
+         dgXm = NKm*(Xxm-gr_1m(iep)*Xam*conjg(gr_1m(iem)))
          dfXm =-NKm*(gr_1m(iep)*Xam-Xxm*conjg(gr_1m(iem)))
          dtXm = NKm*(gr_2m(iep)*Xxm-Xam*conjg(gr_2m(iem)))
-         dhXm = NKm*(Xam+gr_2m(iep)*Xxm*conjg(gr_2m(iem)))
+         dhXm = NKm*(Xam-gr_2m(iep)*Xxm*conjg(gr_2m(iem)))
 !
 !-- Current contribution
 !
       lcurrR =  (dgRp-dhRp-(dgRm-dhRm))*thm-thp*conjg(dgRp-dhRp-(dgRm-dhRm))
-      lcurrK =  (dgXp+dhXp-(dgXm+dhXm))
+      lcurrK =  (dgXp-dhXp-(dgXm-dhXm))
 
       icond = 0.25*(lcurrR+lcurrK)
 

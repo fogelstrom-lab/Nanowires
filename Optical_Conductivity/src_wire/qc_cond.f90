@@ -349,7 +349,7 @@ contains
          vp = cone*dth
          vt =-cone*dth
          XxpL(:) =-(vp-gr_1p(:,iep)*vt*conjg(gr_1p(:,iem)))/X1p(:) 
-         XapL(:) = (vt-gr_2p(:,iep)*vp*conjg(gr_2p(:,iem)))/X2p(:) 
+         XapL(:) =-(vt-gr_2p(:,iep)*vp*conjg(gr_2p(:,iem)))/X2p(:) 
 
 !        XxpL(:) = ((vp-nimpX0(:))+gr_1p(:,iep)*(vp+nimpX3(:))*conjg(gr_1p(:,iem)) &
 !                            -gr_1p(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1p(:,iem)))/X1p(:)
@@ -370,7 +370,7 @@ contains
          vp =-cone*dth
          vt = cone*dth
          XxmL(:) =-(vp-gr_1m(:,iep)*vt*conjg(gr_1m(:,iem)))/X1m(:) 
-         XamL(:) = (vt-gr_2m(:,iep)*vp*conjg(gr_2m(:,iem)))/X2m(:) 
+         XamL(:) =-(vt-gr_2m(:,iep)*vp*conjg(gr_2m(:,iem)))/X2m(:) 
 
 !        XxmL(:) =-((vp-nimpX0(:))+gr_1m(:,iep)*(vp+nimpX3(:))*conjg(gr_1m(:,iem)) &
 !                            +gr_1m(:,iep)*nimpX2(:)+nimpX1(:)*conjg(gr_1m(:,iem)))/X1m(:)
@@ -476,10 +476,10 @@ contains
          dtRp(:) = NRp(:)*(tRp(:)-gr_2p(:,iep)*gRp(:)*gr_2p(:,iem))
          dhRp(:) = NRp(:)*(tRp(:)*gr_1p(:,iem)+gr_2p(:,iep)*gRp(:))
 
-         dgXp(:) = NKp(:)*(Xxp(:)+gr_1p(:,iep)*Xap(:)*conjg(gr_1p(:,iem)))
+         dgXp(:) = NKp(:)*(Xxp(:)-gr_1p(:,iep)*Xap(:)*conjg(gr_1p(:,iem)))
          dfXp(:) =-NKp(:)*(gr_1p(:,iep)*Xap(:)-Xxp(:)*conjg(gr_1p(:,iem)))
          dtXp(:) = NKp(:)*(gr_2p(:,iep)*Xxp(:)-Xap(:)*conjg(gr_2p(:,iem)))
-         dhXp(:) = NKp(:)*(Xap(:)+gr_2p(:,iep)*Xxp(:)*conjg(gr_2p(:,iem)))
+         dhXp(:) = NKp(:)*(Xap(:)-gr_2p(:,iep)*Xxp(:)*conjg(gr_2p(:,iem)))
 !
 !-- Make the Green's funct:on p.v < 0
 !
@@ -488,10 +488,10 @@ contains
          dtRm(:) = NRm(:)*(tRm(:)-gr_2m(:,iep)*gRm(:)*gr_2m(:,iem))
          dhRm(:) = NRm(:)*(tRm(:)*gr_1m(:,iem)+gr_2m(:,iep)*gRm(:))
 
-         dgXm(:) = NKm(:)*(Xxm(:)+gr_1m(:,iep)*Xam(:)*conjg(gr_1m(:,iem)))
+         dgXm(:) = NKm(:)*(Xxm(:)-gr_1m(:,iep)*Xam(:)*conjg(gr_1m(:,iem)))
          dfXm(:) =-NKm(:)*(gr_1m(:,iep)*Xam(:)-Xxm(:)*conjg(gr_1m(:,iem)))
          dtXm(:) = NKm(:)*(gr_2m(:,iep)*Xxm(:)-Xam(:)*conjg(gr_2m(:,iem)))
-         dhXm(:) = NKm(:)*(Xam(:)+gr_2m(:,iep)*Xxm(:)*conjg(gr_2m(:,iem)))
+         dhXm(:) = NKm(:)*(Xam(:)-gr_2m(:,iep)*Xxm(:)*conjg(gr_2m(:,iem)))
 !
 !-- Averages over directions, 
 !
@@ -603,7 +603,7 @@ contains
 !-- Current contribution
 !
       lcurrR =  (dgRp-dhRp-(dgRm-dhRm))*thm-thp*conjg(dgRp-dhRp-(dgRm-dhRm))
-      lcurrK =  (dgXp+dhXp-(dgXm+dhXm))
+      lcurrK =  (dgXp-dhXp-(dgXm-dhXm))
 
       icond = 0.25*(lcurrR+lcurrK)
 
