@@ -151,7 +151,7 @@ contains
       integer :: i, iep, iem, icont, icmp, iprint, imploop, maxloop
       real(dp) :: d, thp, thm, dth, err, epsp, epsm
       complex(dp) :: gold, told, xold, aold, gexp, wd, kshift, vp, vt
-      complex(dp) :: aR(2,2), bR(2,2), tmp(2,2), cR(2,2), cX(2,2), gR(2,2), gX(2,2)
+      complex(dp) :: aR(2,2), bR(2,2), bA(2,2), tmp(2,2), cR(2,2), cX(2,2), gR(2,2), gX(2,2)
 
       complex(dp), allocatable :: NRp(:), NRm(:), NKp(:), NKm(:)
       complex(dp), allocatable :: gRpL(:), tRpL(:), XxpL(:), XapL(:)
@@ -341,20 +341,20 @@ contains
          gRpL(:) = (vp*gr_1p(:,iem)-gr_1p(:,iep)*vt)/R1p(:)
          tRpL(:) =-(vt*gr_2p(:,iem)-gr_2p(:,iep)*vp)/R2p(:)
 
-!        gRpL(:) = (gr_1p(:,iep)*(vp-nimpR3(:))+(vp+nimpR0(:))*gr_1p(:,iem) &
-!                            -nimpR1(:)-gr_1p(:,iep)*nimpR2(:)*gr_1p(:,iem))/R1p(:)
-!        tRpL(:) = (gr_2p(:,iep)*(vp+nimpR0(:))+(vp-nimpR3(:))*gr_2p(:,iem)&
-!                            -nimpR2(:)-gr_2p(:,iep)*nimpR1(:)*gr_2p(:,iem))/R2p(:)
+         gRpL(:) = gRpL(:)-(nimpR1(:)+gr_1p(:,iep)*nimpR2(:)*gr_1p(:,iem) &
+                           +gr_1p(:,iep)*nimpR3(:)-nimpR0(:)*gr_1p(:,iem))/R1p(:)
+         tRpL(:) = tRpL(:)+(nimpR2(:)+gr_2p(:,iep)*nimpR1(:)*gr_2p(:,iem) &
+                           +gr_2p(:,iep)*nimpR0(:)-nimpR3(:)*gr_2p(:,iem))/R2p(:)
 
          vp = cone*dth
          vt =-cone*dth
          XxpL(:) =-(vp-gr_1p(:,iep)*vt*conjg(gr_1p(:,iem)))/X1p(:) 
          XapL(:) =-(vt-gr_2p(:,iep)*vp*conjg(gr_2p(:,iem)))/X2p(:) 
 
-!        XxpL(:) = ((vp-nimpX0(:))+gr_1p(:,iep)*(vp+nimpX3(:))*conjg(gr_1p(:,iem)) &
-!                            -gr_1p(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1p(:,iem)))/X1p(:)
-!        XapL(:) = ((vp+nimpX3(:))+gr_2p(:,iep)*(vp-nimpX0(:))*conjg(gr_2p(:,iem)) &
-!                            +gr_2p(:,iep)*nimpX1(:)+nimpX2(:)*conjg(gr_2p(:,iem)))/X2p(:)
+         XxpL(:) = XxpL(:)-(nimpX0(:)-gr_1p(:,iep)*nimpX3(:)*conjg(gr_1p(:,iem)) &
+                           +gr_1p(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1p(:,iem)))/X1p(:)
+         XapL(:) = XapL(:)-(nimpX3(:)-gr_2p(:,iep)*nimpX0(:)*conjg(gr_2p(:,iem)) &
+                           -gr_2p(:,iep)*nimpX1(:)+nimpX2(:)*conjg(gr_2p(:,iem)))/X2p(:)
 !
 !-- p.v < 0 --  The vertex corrections ~ p and thus the sign change in vp and vt
 !
@@ -363,19 +363,20 @@ contains
          gRmL(:) = (vp*gr_1m(:,iem)-gr_1m(:,iep)*vt)/R1m(:)
          tRmL(:) =-(vt*gr_2m(:,iem)-gr_2m(:,iep)*vp)/R2m(:)
 
-!        gRmL(:) = (gr_1m(:,iep)*(vp-nimpR3(:))+(vp+nimpR0(:))*gr_1m(:,iem) &
-!                            -nimpR1(:)-gr_1m(:,iep)*nimpR2(:)*gr_1m(:,iem))/R1m(:)
-!        tRmL(:) = (gr_2m(:,iep)*(vp+nimpR0(:))+(vp-nimpR3(:))*gr_2m(:,iem)&
-!                            -nimpR2(:)-gr_2m(:,iep)*nimpR1(:)*gr_2m(:,iem))/R2m(:)
+         gRmL(:) = gRmL(:)-(nimpR1(:)+gr_1m(:,iep)*nimpR2(:)*gr_1m(:,iem) &
+                           +gr_1m(:,iep)*nimpR3(:)-nimpR0(:)*gr_1m(:,iem))/R1m(:)
+         tRmL(:) = tRmL(:)+(nimpR2(:)+gr_2m(:,iep)*nimpR1(:)*gr_2m(:,iem) &
+                           +gr_2m(:,iep)*nimpR0(:)-nimpR3(:)*gr_2m(:,iem))/R2m(:)
+
          vp =-cone*dth
          vt = cone*dth
          XxmL(:) =-(vp-gr_1m(:,iep)*vt*conjg(gr_1m(:,iem)))/X1m(:) 
          XamL(:) =-(vt-gr_2m(:,iep)*vp*conjg(gr_2m(:,iem)))/X2m(:) 
 
-!        XxmL(:) =-((vp-nimpX0(:))+gr_1m(:,iep)*(vp+nimpX3(:))*conjg(gr_1m(:,iem)) &
-!                            +gr_1m(:,iep)*nimpX2(:)+nimpX1(:)*conjg(gr_1m(:,iem)))/X1m(:)
-!        XamL(:) = ((vp+nimpX3(:))+gr_2m(:,iep)*(vp-nimpX0(:))*conjg(gr_2m(:,iem)) &
-!                            +gr_2m(:,iep)*nimpX1(:)+nimpX2(:)*conjg(gr_2m(:,iem)))/X2m(:)
+         XxmL(:) = XxmL(:)-(nimpX0(:)-gr_1m(:,iep)*nimpX3(:)*conjg(gr_1m(:,iem)) &
+                           +gr_1m(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1m(:,iem)))/X1m(:)
+         XamL(:) = XamL(:)-(nimpX3(:)-gr_2p(:,iep)*nimpX0(:)*conjg(gr_2m(:,iem)) &
+                           -gr_2m(:,iep)*nimpX1(:)+nimpX2(:)*conjg(gr_2m(:,iem)))/X2m(:)
 !
 !-- Solve for the spatial dependence
 !
@@ -477,8 +478,8 @@ contains
          dhRp(:) = NRp(:)*(tRp(:)*gr_1p(:,iem)+gr_2p(:,iep)*gRp(:))
 
          dgXp(:) = NKp(:)*(Xxp(:)-gr_1p(:,iep)*Xap(:)*conjg(gr_1p(:,iem)))
-         dfXp(:) =-NKp(:)*(gr_1p(:,iep)*Xap(:)-Xxp(:)*conjg(gr_1p(:,iem)))
-         dtXp(:) = NKp(:)*(gr_2p(:,iep)*Xxp(:)-Xap(:)*conjg(gr_2p(:,iem)))
+         dfXp(:) =-NKp(:)*(gr_1p(:,iep)*Xap(:)+Xxp(:)*conjg(gr_2p(:,iem)))
+         dtXp(:) = NKp(:)*(gr_2p(:,iep)*Xxp(:)+Xap(:)*conjg(gr_1p(:,iem)))
          dhXp(:) = NKp(:)*(Xap(:)-gr_2p(:,iep)*Xxp(:)*conjg(gr_2p(:,iem)))
 !
 !-- Make the Green's funct:on p.v < 0
@@ -489,8 +490,8 @@ contains
          dhRm(:) = NRm(:)*(tRm(:)*gr_1m(:,iem)+gr_2m(:,iep)*gRm(:))
 
          dgXm(:) = NKm(:)*(Xxm(:)-gr_1m(:,iep)*Xam(:)*conjg(gr_1m(:,iem)))
-         dfXm(:) =-NKm(:)*(gr_1m(:,iep)*Xam(:)-Xxm(:)*conjg(gr_1m(:,iem)))
-         dtXm(:) = NKm(:)*(gr_2m(:,iep)*Xxm(:)-Xam(:)*conjg(gr_2m(:,iem)))
+         dfXm(:) =-NKm(:)*(gr_1m(:,iep)*Xam(:)+Xxm(:)*conjg(gr_2m(:,iem)))
+         dtXm(:) = NKm(:)*(gr_2m(:,iep)*Xxm(:)+Xam(:)*conjg(gr_1m(:,iem)))
          dhXm(:) = NKm(:)*(Xam(:)-gr_2m(:,iep)*Xxm(:)*conjg(gr_2m(:,iem)))
 !
 !-- Averages over directions, 
@@ -533,21 +534,25 @@ contains
 
             aR(1,1) = gimpP(i,1)
             aR(1,2) = fimpP(i,1)
-            aR(2,1) =-timpP(i,1)
+            aR(2,1) = timpP(i,1)
             aR(2,2) =-gimpP(i,1)
 
             bR(1,1) = gimpP(i,2)
             bR(1,2) = fimpP(i,2)
-            bR(2,1) =-timpP(i,2)
+            bR(2,1) = timpP(i,2)
             bR(2,2) =-gimpP(i,2)
 
             tmp = czero
             tmp = matmul(gR,bR)
             cR = srate(1)*matmul(aR,tmp)
 
-            bR = conjg(transpose(bR))
+            bA(1,1) = conjg(bR(1,1))
+            bA(1,2) =-conjg(bR(2,1))
+            bA(2,1) =-conjg(bR(1,2))
+            bA(2,2) = conjg(bR(2,2))
+
             tmp = czero
-            tmp = matmul(gX,bR)
+            tmp = matmul(gX,bA)
             cX = srate(1)*matmul(aR,tmp)
 
             nimpR0(i) = cR(1,1)
@@ -558,27 +563,30 @@ contains
             nimpX0(i) = cX(1,1)
             nimpX1(i) = cX(1,2)
             nimpX2(i) = cX(2,1)
-            nimpX3(i) =-cX(2,2)
+            nimpX3(i) = cX(2,2)
 
 !-- magnetic scatterers
 
             aR(1,1) = gimpM(i,1)
             aR(1,2) = fimpM(i,1)
-            aR(2,1) =-timpM(i,1)
+            aR(2,1) = timpM(i,1)
             aR(2,2) =-gimpM(i,1)
 
             bR(1,1) = gimpM(i,2)
             bR(1,2) = fimpM(i,2)
-            bR(2,1) =-timpM(i,2)
+            bR(2,1) = timpM(i,2)
             bR(2,2) =-gimpM(i,2)
 
             tmp = czero
             tmp = matmul(gR,bR)
             cR = srate(2)*matmul(aR,tmp)
 
-            bR = conjg(transpose(bR))
+            bA(1,1) = conjg(bR(1,1))
+            bA(1,2) =-conjg(bR(2,1))
+            bA(2,1) =-conjg(bR(1,2))
+            bA(2,2) = conjg(bR(2,2))
             tmp = czero
-            tmp = matmul(gX,bR)
+            tmp = matmul(gX,bA)
             cX = srate(2)*matmul(aR,tmp)
 
             nimpR0(i) = nimpR0(i)+cR(1,1)
@@ -589,15 +597,25 @@ contains
             nimpX0(i) = nimpX0(i)+cX(1,1)
             nimpX1(i) = nimpX1(i)+cX(1,2)
             nimpX2(i) = nimpX2(i)+cX(2,1)
-            nimpX3(i) = nimpX3(i)-cX(2,2)
+            nimpX3(i) = nimpX3(i)+cX(2,2)
 
             err = err+abs(nimpR0(i)-oimpR0(i))**2+abs(nimpR1(i)-oimpR1(i))**2+ &
                       abs(nimpR2(i)-oimpR2(i))**2+abs(nimpR3(i)-oimpR3(i))**2
 
             err = err+abs(nimpX0(i)-oimpX0(i))**2+abs(nimpX1(i)-oimpX1(i))**2+ &
                       abs(nimpX2(i)-oimpX2(i))**2+abs(nimpX3(i)-oimpX3(i))**2
+         
          enddo
          err = sqrt(err)
+         nimpR0 = 0.9*oimpR0 + 0.1*nimpR0
+         nimpR1 = 0.9*oimpR1 + 0.1*nimpR1
+         nimpR2 = 0.9*oimpR2 + 0.1*nimpR2
+         nimpR3 = 0.9*oimpR3 + 0.1*nimpR3
+
+         nimpX0 = 0.9*oimpX0 + 0.1*nimpX0
+         nimpX1 = 0.9*oimpX1 + 0.1*nimpX1
+         nimpX2 = 0.9*oimpX2 + 0.1*nimpX2
+         nimpX3 = 0.9*oimpX3 + 0.1*nimpX3
      enddo
 !
 !-- Current contribution

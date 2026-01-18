@@ -209,8 +209,8 @@ contains
 
       norm= -w/(cone+pg)
       g1  = 2.0_dp*gr_1(it)*norm           
-      g2  =-2.0_dp*gr_2(it)*norm           
-      dig =          (cone-pg)*norm
+      g2  = 2.0_dp*gr_2(it)*norm
+      dig =       (cone-pg)*norm
  
       g3 = dig
       cj = dig
@@ -220,8 +220,8 @@ contains
 
       norm=-w/(cone+pg)
       g1  = g1+2.0_dp*gr_1(it)*norm
-      g2  = g2-2.0_dp*gr_2(it)*norm
-      dig =             (cone-pg)*norm
+      g2  = g2+2.0_dp*gr_2(it)*norm
+      dig =          (cone-pg)*norm
 
       g1 = g1*half
       g2 = g2*half
@@ -239,14 +239,14 @@ contains
       endif
 
       g32 = g3*g3
-      norm = g32-g1*g2
+      norm = g32+g1*g2
 !
 ! -- Potential scattering
 !
       Denom = cone/(cone-sigma(1)*(cone+norm))
       cj = srate(1)*Denom
       fimpP(ioshift) = cj*g1
-      timpP(ioshift) = cj*g2
+      timpP(ioshift) =-cj*g2
       gimpP(ioshift) = cj*g3
 
       uimp0 = srate(0)*cj
@@ -259,7 +259,7 @@ contains
       pg = magn*Denom
 
       fimpM(ioshift) = -cj*g1
-      timpM(ioshift) = -cj*g2
+      timpM(ioshift) =  cj*g2
       gimpM(ioshift) = -(cj-pg)*g3
 
       gimp0 = gimpP(ioshift) + gimpM(ioshift)
