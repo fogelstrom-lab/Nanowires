@@ -177,7 +177,7 @@ contains
 ! -- Generate the linear response Green's function
 !
       kshift = 2.0*w*etaR
-      dth=(thp-thm)
+      dth=(thm-thp)
       err =100.0
       maxloop = 1 
       imploop = 0  
@@ -193,8 +193,8 @@ contains
       R1p = alpha1p(iep)+beta1p(iem)
       R2p = alpha2p(iep)+beta2p(iem)
 
-      X1p = alpha1p(iep)-conjg(alpha1p(iem))-kshift
-      X2p = alpha2p(iep)-conjg(alpha2p(iem))-kshift
+      X1p = alpha1p(iep)-conjg(alpha1p(iem)) !-kshift
+      X2p = alpha2p(iep)-conjg(alpha2p(iem)) !-kshift
 !
 !-- p.v < 0 --
 !
@@ -204,33 +204,29 @@ contains
       R1m = alpha1m(iep)+beta1m(iem)
       R2m = alpha2m(iep)+beta2m(iem)
 
-      X1m = alpha1m(iep)-conjg(alpha1m(iem))-kshift
-      X2m = alpha2m(iep)-conjg(alpha2m(iem))-kshift
+      X1m = alpha1m(iep)-conjg(alpha1m(iem)) !-kshift
+      X2m = alpha2m(iep)-conjg(alpha2m(iem)) !-kshift
 !
 !-- p.v > 0 --
 !
          vp = cone
-         vt =-cone
-         gRp = (vp*gr_1p(iem)-gr_1p(iep)*vt)/R1p
-         tRp =-(vt*gr_2p(iem)-gr_2p(iep)*vp)/R2p
+         gRp = vp*(gr_1p(iem)+gr_1p(iep))/R1p
+         tRp = vp*(gr_2p(iem)+gr_2p(iep))/R2p
 
          vp = cone*dth
-         vt =-cone*dth
-         Xxp =-(vp-gr_1p(iep)*vt*conjg(gr_1p(iem)))/X1p
-         Xap =-(vt-gr_2p(iep)*vp*conjg(gr_2p(iem)))/X2p
+         Xxp = vp*(cone+gr_1p(iep)*conjg(gr_1p(iem)))/X1p
+         Xap =-vp*(cone+gr_2p(iep)*conjg(gr_2p(iem)))/X2p
 
 !
 !-- p.v < 0 --  The vertex corrections ~ p and thus the sign change in vp and vt
 !
          vp =-cone
-         vt = cone
-         gRm = (vp*gr_1m(iem)-gr_1m(iep)*vt)/R1m
-         tRm =-(vt*gr_2m(iem)-gr_2m(iep)*vp)/R2m
+         gRm = vp*(gr_1m(iem)+gr_1m(iep))/R1m
+         tRm = vp*(gr_2m(iem)+gr_2m(iep))/R2m
 
          vp =-cone*dth
-         vt = cone*dth
-         Xxm =-(vp-gr_1m(iep)*vt*conjg(gr_1m(iem)))/X1m
-         Xam =-(vt-gr_2m(iep)*vp*conjg(gr_2m(iem)))/X2m
+         Xxm = vp*(cone+gr_1m(iep)*conjg(gr_1m(iem)))/X1m
+         Xam =-vp*(cone+gr_2m(iep)*conjg(gr_2m(iem)))/X2m
 
 !
 !-- Make the Green's function p.v > 0, a factor two less due to averaging over direction

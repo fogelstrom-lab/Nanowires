@@ -373,7 +373,7 @@ contains
       alpha2p(iep) = s22 - s12*gr_2p(iep)
        beta2p(iep) = s11 - s12*gr_2p(iep)
 !
-!-- v.p > 0
+!-- v.p < 0
 !
       alpha1m(iep) = s11 + s21*gr_1m(iep)
        beta1m(iep) = s22 + s21*gr_1m(iep)

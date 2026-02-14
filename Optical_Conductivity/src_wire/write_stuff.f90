@@ -196,10 +196,10 @@ contains
          open(81,file='DoS_C.dat',status='unknown')
          open(82,file='DoS_R.dat',status='unknown')
 
-         open(90,file='Gimp_C.dat',status='unknown')
-         open(91,file='Dimp_C.dat',status='unknown')
-         open(92,file='Timp_C.dat',status='unknown')
-         open(93,file='Himp_C.dat',status='unknown')
+         open(90,file='Gimp_x.dat',status='unknown')
+         open(91,file='Dimp_x.dat',status='unknown')
+         open(92,file='Timp_x.dat',status='unknown')
+         open(93,file='Himp_x.dat',status='unknown')
 
          do ii=-iemax,iemax,1
             E0=er(ii)/delta0
@@ -207,11 +207,36 @@ contains
             write(81,1000) E0,-aimag(avg(ix,ii))
             write(82,1000) E0,-aimag(avg(sx,ii))
          
+            write(90,1000) E0,gimp( 1,ii)+uimp( 1,ii)
+            write(91,1000) E0,fimp( 1,ii)
+            write(92,1000) E0,timp( 1,ii)
+            write(93,1000) E0,gimp( 1,ii)-uimp( 1,ii)
+         enddo
+         write(90,*)
+         write(91,*)
+         write(92,*)
+         write(93,*)
+         do ii=-iemax,iemax,1
+            E0=er(ii)/delta0
+         
             write(90,1000) E0,gimp(ix,ii)+uimp(ix,ii)
             write(91,1000) E0,fimp(ix,ii)
             write(92,1000) E0,timp(ix,ii)
             write(93,1000) E0,gimp(ix,ii)-uimp(ix,ii)
          enddo
+         write(90,*)
+         write(91,*)
+         write(92,*)
+         write(93,*)
+         do ii=-iemax,iemax,1
+            E0=er(ii)/delta0
+         
+            write(90,1000) E0,gimp(sx,ii)+uimp(sx,ii)
+            write(91,1000) E0,fimp(sx,ii)
+            write(92,1000) E0,timp(sx,ii)
+            write(93,1000) E0,gimp(sx,ii)-uimp(sx,ii)
+         enddo
+
          close(80)
          close(81)
          close(82)
