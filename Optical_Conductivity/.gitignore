@@ -1,5 +1,8 @@
 *.o
 *.mod
+*.dat
+fort.*
 qc_project
 *.out
+Optical_Conductivity/test_wire/
 .DS_Store
