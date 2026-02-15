@@ -3,3 +3,12 @@
 qc_project
 *.out
 .DS_Store
+
+# secrets
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+/git/
