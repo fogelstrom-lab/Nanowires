@@ -276,7 +276,6 @@ contains
       fimp0(1:sx) = fimpP(1:sx,ioshift) + fimpM(1:sx,ioshift)
       timp0(1:sx) = timpP(1:sx,ioshift) + timpM(1:sx,ioshift)
       uimp0(1:sx) = uimpP(1:sx,ioshift)
-
 !
 !---------------------------------------------------------------------
 !
@@ -292,7 +291,7 @@ contains
       real(dp) :: dx
       complex(dp), allocatable :: zen(:), del1(:), del2(:), lam(:)
       complex(dp), allocatable :: ga0(:), gb0(:), lam2w(:), eX(:)
-      complex(dp) :: gold, w2, gC, g0, gaL, gaR, gbL, gbR, op(2), lam0
+      complex(dp) :: gold, w2, gC, g0, gaL, gaR, gbL, gbR
       save
 !
 !--------------------------------------------------------------------
@@ -311,9 +310,7 @@ contains
       w2 = 2.0_dp*w
       dx  = abs(grid(1)-grid(2)) ! *2.0_dp/2.0_dp
 
-        zen(:) =             en-gimp0(:)
-!      del1(:) =   fimp0(:) 
-!      del2(:) =   timp0(:) 
+        zen(:) =           en  -gimp0(:)
        del1(:) =       delx(:) +fimp0(:) 
        del2(:) = conjg(delx(:))+timp0(:) 
         lam(:) = sqrt(del1(:)*del2(:)-zen(:)*zen(:))
@@ -322,26 +319,13 @@ contains
 
         ga0(:) = -del1(:)/(zen(:)+w*lam(:))
         gb0(:) =  del2(:)/(zen(:)+w*lam(:))
-
-       gaL = ga0(1)
-       gbL = gb0(1)
-
-       gaR = ga0(sx)
-       gbR = gb0(sx)
 !
 ! -- reservoir coherence functions
 !      
-!     op(1) =       DelL +del1(1)
-!     op(2) = conjg(DelL)+del2(1)
-!     lam0 = sqrt(op(1)*op(2)-zen(1)*zen(1))
-!     gaL = -op(1)/(zen(1)+w*lam0)
-!     gbL =  op(2)/(zen(1)+w*lam0)
-
-!     op(1) =       DelR +del1(sx)
-!     op(2) = conjg(DelR)+del2(sx)
-!     lam0 = sqrt(op(1)*op(2)-zen(sx)*zen(sx))
-!     gaR = -op(1)/(zen(sx)+w*lam0)
-!     gbR =  op(2)/(zen(sx)+w*lam0)
+      gaL = ga0(1)
+      gbL = gb0(1)
+      gaR = ga0(sx)
+      gbR = gb0(sx)
 !
 !-----------------  gamma1 (p.v > 0) ----------------------------------
 !
@@ -485,53 +469,58 @@ contains
       alpha2m(:,iep) = s22(:) - s12(:)*gr_2m(:,iep)
        beta2m(:,iep) = s11(:) - s12(:)*gr_2m(:,iep)
 !
-!-- Temporary fix
-!
-      alpha1p(sx,iep) = alpha1p(sx-1,iep)
-       beta1p(sx,iep) =  beta1p(sx-1,iep)
-
-      alpha2p( 1,iep) = alpha2p(   2,iep) 
-       beta2p( 1,iep) =  beta2p(   2,iep)
-
-      alpha1m( 1,iep) = alpha1m(   2,iep)
-       beta1m( 1,iep) =  beta1m(   2,iep)
-
-      alpha2m(sx,iep) = alpha2m(sx-1,iep) 
-       beta2m(sx,iep) =  beta2m(sx-1,iep)
-!
 !-- Check that Im-part > 0
 !
       if(myrank == 0 .and. iprint == 0) then
+         ic = sx/2
          do i=1,sx,1
-            rep = aimag(alpha1p(i,iep))
-            aip = aimag(alpha1p(i,iep)-s11(i))
-            write(500,1000) grid(i),rep
+            rep =  real(alpha1p(i,iep))
+            aip = aimag(alpha1p(i,iep))
+            write(500,1000) grid(i), real(s21(i))
             write(600,1000) grid(i),aip
+            write(700,1000) grid(i), real(gr_1p(i,iep))
+            write(800,1000) grid(i),aimag(gr_1p(i,iep))
 
-            rep = aimag( beta1p(i,iep))
-            aip = aimag( beta1p(i,iep)-s22(i))
-            write(501,1000) grid(i),rep
+            rep =  real(alpha2p(i,iep))
+            aip = aimag(alpha2p(i,iep))
+            write(501,1000) grid(i),aimag(s21(i))
             write(601,1000) grid(i),aip
+            write(701,1000) grid(i), real(gr_2p(i,iep))
+            write(801,1000) grid(i),aimag(gr_2p(i,iep))
 
-            rep = aimag(alpha2p(i,iep))
-            aip = aimag(alpha2p(i,iep)-s22(i))
-            write(502,1000) grid(i),rep
+            rep =  real(alpha1m(i,iep))
+            aip = aimag(alpha1m(i,iep))
+            write(502,1000) grid(i), real(s12(i))
             write(602,1000) grid(i),aip
+            write(702,1000) grid(i), real(gr_1m(i,iep))
+            write(802,1000) grid(i),aimag(gr_1m(i,iep))
 
-            rep = aimag( beta2p(i,iep))
-            aip = aimag( beta2p(i,iep)-s11(i))
-            write(503,1000) grid(i),rep
+            rep =  real(alpha2m(i,iep))
+            aip = aimag(alpha2m(i,iep))
+            write(503,1000) grid(i),aimag(s12(i))
             write(603,1000) grid(i),aip
+            write(703,1000) grid(i), real(gr_2m(i,iep))
+            write(803,1000) grid(i),aimag(gr_2m(i,iep))
          enddo
 
-         write(500,*)
-         write(501,*)
-         write(502,*)
-         write(503,*)
-         write(600,*)
-         write(601,*)
-         write(602,*)
-         write(603,*)
+         do i = 1,sx,1
+            write(500,*)
+            write(501,*)
+            write(502,*)
+            write(503,*)
+            write(600,*)
+            write(601,*)
+            write(602,*)
+            write(603,*)
+            write(700,*)
+            write(701,*)
+            write(702,*)
+            write(703,*)
+            write(800,*)
+            write(801,*)
+            write(802,*)
+            write(803,*)
+         enddo
       endif
 
   1000 format(30(1x,e12.6))

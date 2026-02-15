@@ -92,8 +92,8 @@ contains
 
       if(.not.allocated(delx)) allocate(delx(1:sx))
       delx = czero
-      delx(1) = delL 
-      delX(sx) = delR
+      delx( 1) = DelL 
+      delX(sx) = DelR
 
 !       do ii=1,sx
 !          if(grid(ii) < -Ngap) then
@@ -118,9 +118,9 @@ contains
       enddo
 !
 ! - set up the impurity properties
- 
+!
       uu = 0.0_dp
-      if(abs(sigma(1)) .gt. 1.0e-5) uu = sqrt((1.0-sigma(1))/sigma(1)) 
+      if(abs(sigma(1)) .gt. 1.0e-10) uu = sqrt((1.0-sigma(1))/sigma(1)) 
       srate(0) = uu 
       srate(1) = tau(1)*delta0
       srate(2) = tau(2)*delta0
@@ -143,13 +143,13 @@ contains
       timp0 = czero
 
       if(.not.allocated(gimpP)) allocate(gimpP(1:sx,2))
+      if(.not.allocated(uimpP)) allocate(uimpP(1:sx,2))
       if(.not.allocated(fimpP)) allocate(fimpP(1:sx,2))
       if(.not.allocated(timpP)) allocate(timpP(1:sx,2))
-      if(.not.allocated(uimpP)) allocate(uimpP(1:sx,2))
       gimpP = czero
+      uimpP = czero
       fimpP = czero
       timpP = czero
-      uimpP = czero
 
       if(.not.allocated(gimpM)) allocate(gimpM(1:sx,2))
       if(.not.allocated(fimpM)) allocate(fimpM(1:sx,2))
@@ -289,7 +289,7 @@ contains
 
       etaR_org = etaR
 
-      do while (etaR >= etaR_org/(4*2048.0))
+      do while (etaR >= etaR_org/(4.0*2048.0))
          call get_ses(counter,err)
          gp = etaR / delta0
          if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2),' Ngap =',Ngap*2.0_dp
@@ -305,9 +305,8 @@ contains
       deallocate(avj,avg,avf,avt)
 
       idum = 0
-      iprint = 0 
+      iprint = 1 
       ex_old = 3000
-
       do ien = -iemax + myrank, iemax, 200*nprocs
          if(ien .le. 0) energy = 0.5*(er(ien+1)+er(ien))
          if(ien .ge. 0) energy = 0.5*(er(ien)+er(ien-1))
@@ -325,6 +324,14 @@ contains
          close(601)
          close(602)
          close(603)
+         close(700)
+         close(701)
+         close(702)
+         close(703)
+         close(800)
+         close(801)
+         close(802)
+         close(803)
       endif
 
  1000 format(a,e12.6,' ( iterations=',i8,')',a,2(1x,f8.4),a,f8.4)

@@ -149,7 +149,7 @@ contains
       complex(dp), intent(out) :: icond(:)
 
       integer :: i, iep, iem, icont, icmp, iprint, imploop, maxloop
-      real(dp) :: d, thp, thm, dth, err, epsp, epsm
+      real(dp) :: d, thp, thm, dth, err, errR, errX, epsp, epsm, alpha
       complex(dp) :: gold, told, xold, aold, gexp, wd, kshift, vp, vt
       complex(dp) :: aR(2,2), bR(2,2), bA(2,2), tmp(2,2), cR(2,2), cX(2,2), gR(2,2), gX(2,2)
 
@@ -291,8 +291,10 @@ contains
 !
       wd=w*abs(grid(1)-grid(2))/2.0
       kshift = 2.0*w*etaR
-      dth=(thp-thm)
+      dth=(thm-thp)
       err =100.0
+      alpha =1.00_dp
+
       maxloop = 1 
       imploop = 0  
 
@@ -348,8 +350,8 @@ contains
 
          vp = cone*dth
          vt =-cone*dth
-         XxpL(:) =-(vp-gr_1p(:,iep)*vt*conjg(gr_1p(:,iem)))/X1p(:) 
-         XapL(:) =-(vt-gr_2p(:,iep)*vp*conjg(gr_2p(:,iem)))/X2p(:) 
+         XxpL(:) = (vp-gr_1p(:,iep)*vt*conjg(gr_1p(:,iem)))/X1p(:) 
+         XapL(:) = (vt-gr_2p(:,iep)*vp*conjg(gr_2p(:,iem)))/X2p(:) 
 
          XxpL(:) = XxpL(:)-(nimpX0(:)-gr_1p(:,iep)*nimpX3(:)*conjg(gr_1p(:,iem)) &
                            +gr_1p(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1p(:,iem)))/X1p(:)
@@ -370,8 +372,8 @@ contains
 
          vp =-cone*dth
          vt = cone*dth
-         XxmL(:) =-(vp-gr_1m(:,iep)*vt*conjg(gr_1m(:,iem)))/X1m(:) 
-         XamL(:) =-(vt-gr_2m(:,iep)*vp*conjg(gr_2m(:,iem)))/X2m(:) 
+         XxmL(:) = (vp-gr_1m(:,iep)*vt*conjg(gr_1m(:,iem)))/X1m(:) 
+         XamL(:) = (vt-gr_2m(:,iep)*vp*conjg(gr_2m(:,iem)))/X2m(:) 
 
          XxmL(:) = XxmL(:)-(nimpX0(:)-gr_1m(:,iep)*nimpX3(:)*conjg(gr_1m(:,iem)) &
                            +gr_1m(:,iep)*nimpX2(:)-nimpX1(:)*conjg(gr_1m(:,iem)))/X1m(:)
@@ -563,13 +565,13 @@ contains
             nimpX0(i) = cX(1,1)
             nimpX1(i) = cX(1,2)
             nimpX2(i) = cX(2,1)
-            nimpX3(i) = cX(2,2)
+            nimpX3(i) =-cX(2,2)
 
 !-- magnetic scatterers
 
             aR(1,1) = gimpM(i,1)
             aR(1,2) = fimpM(i,1)
-            aR(2,1) =- timpM(i,1)
+            aR(2,1) =-timpM(i,1)
             aR(2,2) =-gimpM(i,1)
 
             bR(1,1) = gimpM(i,2)
@@ -597,25 +599,35 @@ contains
             nimpX0(i) = nimpX0(i)+cX(1,1)
             nimpX1(i) = nimpX1(i)+cX(1,2)
             nimpX2(i) = nimpX2(i)+cX(2,1)
-            nimpX3(i) = nimpX3(i)+cX(2,2)
+            nimpX3(i) = nimpX3(i)-cX(2,2)
 
-            err = err+abs(nimpR0(i)-oimpR0(i))**2+abs(nimpR1(i)-oimpR1(i))**2+ &
-                      abs(nimpR2(i)-oimpR2(i))**2+abs(nimpR3(i)-oimpR3(i))**2
+            
+            errR = max(errR, abs(nimpR0(i)-oimpR0(i)))
+            errR = max(errR, abs(nimpR1(i)-oimpR1(i)))
+            errR = max(errR, abs(nimpR2(i)-oimpR2(i)))
+            errR = max(errR, abs(nimpR3(i)-oimpR3(i)))
 
-            err = err+abs(nimpX0(i)-oimpX0(i))**2+abs(nimpX1(i)-oimpX1(i))**2+ &
-                      abs(nimpX2(i)-oimpX2(i))**2+abs(nimpX3(i)-oimpX3(i))**2
-         
+            errX = max(errX, abs(nimpX0(i)-oimpX0(i)))
+            errX = max(errX, abs(nimpX1(i)-oimpX1(i)))
+            errX = max(errX, abs(nimpX2(i)-oimpX2(i)))
+            errX = max(errX, abs(nimpX3(i)-oimpX3(i)))
          enddo
-         err = sqrt(err)
-         nimpR0 = 0.9*oimpR0 + 0.1*nimpR0
-         nimpR1 = 0.9*oimpR1 + 0.1*nimpR1
-         nimpR2 = 0.9*oimpR2 + 0.1*nimpR2
-         nimpR3 = 0.9*oimpR3 + 0.1*nimpR3
 
-         nimpX0 = 0.9*oimpX0 + 0.1*nimpX0
-         nimpX1 = 0.9*oimpX1 + 0.1*nimpX1
-         nimpX2 = 0.9*oimpX2 + 0.1*nimpX2
-         nimpX3 = 0.9*oimpX3 + 0.1*nimpX3
+         nimpR0 = (1.0-alpha)*oimpR0 + alpha*nimpR0
+         nimpR1 = (1.0-alpha)*oimpR1 + alpha*nimpR1
+         nimpR2 = (1.0-alpha)*oimpR2 + alpha*nimpR2
+         nimpR3 = (1.0-alpha)*oimpR3 + alpha*nimpR3
+
+         nimpX0 = (1.0-alpha)*oimpX0 + alpha*nimpX0
+         nimpX1 = (1.0-alpha)*oimpX1 + alpha*nimpX1
+         nimpX2 = (1.0-alpha)*oimpX2 + alpha*nimpX2
+         nimpX3 = (1.0-alpha)*oimpX3 + alpha*nimpX3
+         
+         if(myrank==0) then
+            write(200,*) imploop, ' errR=', errR, ' errX=', errX, &
+                         ' energy=', energy, ' omega=', omh*2.0_dp
+         endif
+         err = max(errR, errX) 
      enddo
 !
 !-- Current contribution
@@ -641,7 +653,7 @@ contains
       real(dp) :: dom0, dom, oga, intlim
       integer :: ifreq
    
-      intlim = 30.0_dp * max(delta0,delta0*sumsrate)
+      intlim = 10.0_dp * max(delta0,delta0*sumsrate)
       dom0 = 0.02_dp * delta0
 
       oga = dom0/2.0_dp

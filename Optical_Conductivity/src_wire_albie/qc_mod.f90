@@ -92,8 +92,8 @@ contains
 
       if(.not.allocated(delx)) allocate(delx(1:sx))
       delx = czero
-      delx(1) = delL 
-      delX(sx) = delR
+      delx( 1) = DelL 
+      delX(sx) = DelR
 
 !       do ii=1,sx
 !          if(grid(ii) < -Ngap) then
@@ -289,7 +289,7 @@ contains
 
       etaR_org = etaR
 
-      do while (etaR >= etaR_org/(2048.0))
+      do while (etaR >= etaR_org/(4.0*2048.0))
          call get_ses(counter,err)
          gp = etaR / delta0
          if(myrank == 0) write(*,1000) ' Did round with etaR = ',gp,counter,' tau =', tau(1),tau(2),' Ngap =',Ngap*2.0_dp
