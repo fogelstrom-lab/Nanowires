@@ -1,0 +1,21 @@
+#
+cd Phase=0.00pi 
+pwd
+mpirun -n 10 ../qc_project < input.dat
+#
+cd ../Phase=0.25pi 
+pwd
+mpirun -n 10 ../qc_project < input.dat
+#
+cd ../Phase=0.50pi 
+pwd
+mpirun -n 10 ../qc_project < input.dat
+#
+cd ../Phase=0.75pi 
+pwd
+mpirun -n 10 ../qc_project < input.dat
+#
+cd ../Phase=1.00pi 
+pwd
+mpirun -n 10 ../qc_project < input.dat
+#
