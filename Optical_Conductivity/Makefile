@@ -1,8 +1,7 @@
 FC = mpifort
 
-SRC_DIR = src
+SRC_DIR = src_wire
 OBJ_DIR = build
-
 BUILD ?= release
 
 FFLAGS_COMMON = -std=f2008 -mcpu=apple-m2 -ftree-vectorize -funroll-loops -fno-math-errno
